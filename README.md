@@ -7,6 +7,8 @@
   </tr>
 </table> 
 
+#### :link: <a href="https://investment-portfolio-backtester.streamlit.app/">Dashboard</a></b>
+
 ### Technologies
 - Python 3.8+
 - Pandas
