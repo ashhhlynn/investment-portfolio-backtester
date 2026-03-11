@@ -4,10 +4,18 @@ import sqlite3
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from portfolio_backtester import run_backtester
+from portfolio_backtester import (
+    create_database_tables,
+    get_portfolio_returns,
+    get_benchmark_returns,
+    performance_summary,
+)
 
 def start_app():
-    run_backtester()
+    create_database_tables()
+    get_portfolio_returns()
+    get_benchmark_returns()
+    performance_summary()
 
 start_app()
 conn = sqlite3.connect("portfolio.db")

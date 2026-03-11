@@ -37,6 +37,12 @@ def create_database_tables():
         PRIMARY KEY(date, portfolio_name, ticker, action)
     )
     """)
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Aggressive','SPY',0.8)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Aggressive','AGG',0.2)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Balanced','SPY',0.6)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Balanced','AGG',0.4)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Conservative','SPY',0.4)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Conservative','AGG',0.6)")
     conn.commit()
 
 def get_portfolio_prices():
@@ -231,13 +237,6 @@ def plot_all(save_folder="plots"):
 
 def run_backtester():
     create_database_tables()
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Aggressive','SPY',0.8)")
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Aggressive','AGG',0.2)")
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Balanced','SPY',0.6)")
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Balanced','AGG',0.4)")
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Conservative','SPY',0.4)")
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Conservative','AGG',0.6)")
-    conn.commit()
     get_portfolio_returns()
     get_benchmark_returns()
     performance_summary()
