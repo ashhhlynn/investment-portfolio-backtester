@@ -43,8 +43,15 @@ def get_portfolio_prices():
     end = datetime(2025,1,1)
     price_data = pd.DataFrame()
     for ticker in tickers:
-        df = web.DataReader(ticker, 'stooq', start, end)['Close'].sort_index()
-        price_data[ticker] = df
+        df = web.DataReader(ticker, 'stooq', start, end)
+        if 'Close' in df.columns:
+            close = df['Close']
+        elif 'close' in df.columns:
+            close = df['close']
+        else:
+            raise ValueError(f"No close price found for {ticker}")
+        close = close.sort_index()
+        price_data[ticker] = close
     price_data.index = pd.to_datetime(price_data.index)
     return price_data
 
