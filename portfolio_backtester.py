@@ -61,7 +61,6 @@ def get_portfolio_prices():
         close = close.sort_index()
         price_data[ticker] = close
     price_data.index = pd.to_datetime(price_data.index)
-    print(price_data)
     return price_data
 
 def get_benchmark_prices():
@@ -72,11 +71,11 @@ def get_benchmark_prices():
     return benchmark
 
 def get_portfolio_returns(initial_investment=10000, rebalance_frequency='Y'):
-    prices = get_portfolio_prices()
-    returns = prices.pct_change().dropna()
     cursor.execute("DELETE FROM portfolio_values")
     cursor.execute("DELETE FROM transactions")
     conn.commit()
+    prices = get_portfolio_prices()
+    returns = prices.pct_change().dropna()
     rebalance_dates = returns.resample(rebalance_frequency).first().index
     portfolios_df = pd.read_sql("SELECT * FROM portfolios", conn)
     portfolio_names = portfolios_df['portfolio_name'].unique()
@@ -117,24 +116,6 @@ def get_benchmark_returns(initial_investment=10000):
         """, (str(date.date()), "SPY Benchmark", float(value)))
     conn.commit()
 
-def plot_results():
-    values = pd.read_sql("SELECT * FROM portfolio_values", conn)
-    values['date'] = pd.to_datetime(values['date'])
-    values = values.pivot(index='date', columns='portfolio_name', values='portfolio_value')
-    plt.figure(figsize=(12,6))
-    for column in values.columns:
-        if column == "SPY Benchmark":
-            plt.plot(values.index, values[column], linestyle="--", color="black", label=column)
-        else:
-            plt.plot(values.index, values[column], label=column)
-    plt.title("Portfolio Strategies vs S&P 500 Benchmark")
-    plt.xlabel("Date")
-    plt.ylabel("Portfolio Value ($)")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig("portfolio_backtest.png")
-
 def performance_summary():
     values = pd.read_sql("SELECT * FROM portfolio_values", conn)
     values['date'] = pd.to_datetime(values['date'])
@@ -166,6 +147,24 @@ def performance_summary():
     summary_df['Max Drawdown'] = summary_df['Max Drawdown'].map("{:.2%}".format)
     summary_df['Sharpe'] = summary_df['Sharpe'].map("{:.2f}".format)
     print(summary_df)
+
+def plot_results():
+    values = pd.read_sql("SELECT * FROM portfolio_values", conn)
+    values['date'] = pd.to_datetime(values['date'])
+    values = values.pivot(index='date', columns='portfolio_name', values='portfolio_value')
+    plt.figure(figsize=(12,6))
+    for column in values.columns:
+        if column == "SPY Benchmark":
+            plt.plot(values.index, values[column], linestyle="--", color="black", label=column)
+        else:
+            plt.plot(values.index, values[column], label=column)
+    plt.title("Portfolio Strategies vs S&P 500 Benchmark")
+    plt.xlabel("Date")
+    plt.ylabel("Portfolio Value ($)")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("portfolio_backtest.png")
 
 def plot_all(save_folder="plots"):
     if not os.path.exists(save_folder):

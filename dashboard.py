@@ -14,7 +14,6 @@ def start_app():
     create_database_tables()
     get_portfolio_returns()
     get_benchmark_returns()
-
     conn = sqlite3.connect("portfolio.db")
     values = pd.read_sql("SELECT * FROM portfolio_values", conn)
     values['date'] = pd.to_datetime(values['date'])
