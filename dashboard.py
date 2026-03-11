@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
 
 conn = sqlite3.connect("portfolio.db")
 values = pd.read_sql("SELECT * FROM portfolio_values", conn)
@@ -38,6 +40,20 @@ st.set_page_config(page_title="Portfolio Backtest Dashboard", layout="wide")
 st.title("📊 Portfolio Backtester Dashboard")
 portfolio_list = values.columns.tolist()
 selected_portfolios = st.multiselect("Select portfolios to analyze:", portfolio_list, default=portfolio_list)
+
+tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Drawdowns", "Returns", "Rolling Metrics"])
+with tab1:
+    st.subheader("Portfolio Performance Summary")
+    st.dataframe(summary_df[summary_df['Portfolio'].isin(selected_portfolios)], use_container_width=True)
+    st.subheader("Portfolio Value Over Time")
+    fig_value = go.Figure()
+    for col in selected_portfolios:
+        if "Benchmark" in col:
+            fig_value.add_trace(go.Scatter(x=values.index, y=values[col], mode='lines', name=col, line=dict(dash='dash', color='black')))
+        else:
+            fig_value.add_trace(go.Scatter(x=values.index, y=values[col], mode='lines', name=col))
+    fig_value.update_layout(yaxis_title="Portfolio Value ($)", xaxis_title="Date", template="plotly_white")
+    st.plotly_chart(fig_value, use_container_width=True)
 
 with st.expander("View Transactions Table"):
     st.dataframe(transactions.sort_values(["date", "portfolio_name"]), use_container_width=True)
