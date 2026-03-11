@@ -54,6 +54,12 @@ with tab1:
             fig_value.add_trace(go.Scatter(x=values.index, y=values[col], mode='lines', name=col))
     fig_value.update_layout(yaxis_title="Portfolio Value ($)", xaxis_title="Date", template="plotly_white")
     st.plotly_chart(fig_value, use_container_width=True)
+with tab2:
+    st.subheader("Portfolio Drawdowns Over Time")
+    drawdowns = (values[selected_portfolios].cummax() - values[selected_portfolios]) / values[selected_portfolios].cummax()
+    fig_dd = px.line(drawdowns, x=drawdowns.index, y=drawdowns.columns)
+    fig_dd.update_layout(yaxis_title="Drawdown", xaxis_title="Date", template="plotly_white")
+    st.plotly_chart(fig_dd, use_container_width=True)
 
 with st.expander("View Transactions Table"):
     st.dataframe(transactions.sort_values(["date", "portfolio_name"]), use_container_width=True)
