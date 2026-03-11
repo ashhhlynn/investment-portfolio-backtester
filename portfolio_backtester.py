@@ -6,6 +6,38 @@ import os
 import pandas_datareader.data as web
 from datetime import datetime
 
+conn = sqlite3.connect("portfolio.db")
+cursor = conn.cursor()
+
+def create_database_tables():
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS portfolios (
+        portfolio_name TEXT,
+        ticker TEXT,
+        weight REAL,
+        PRIMARY KEY (portfolio_name, ticker)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS portfolio_values (
+        date TEXT,
+        portfolio_name TEXT,
+        portfolio_value REAL,
+        PRIMARY KEY (date, portfolio_name)
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS transactions (
+        date TEXT,
+        portfolio_name TEXT,
+        ticker TEXT,
+        action TEXT,
+        shares REAL,
+        price REAL,
+        PRIMARY KEY(date, portfolio_name, ticker, action)
+    )
+    """)
+    conn.commit()
 
 def get_portfolio_prices():
     tickers = ['SPY', 'AGG']
@@ -26,8 +58,6 @@ def get_benchmark_prices():
     return benchmark
 
 def get_portfolio_returns(initial_investment=10000, rebalance_frequency='Y'):
-    conn = sqlite3.connect("portfolio.db")
-    cursor = conn.cursor()
     prices = get_portfolio_prices()
     returns = prices.pct_change().dropna()
     cursor.execute("DELETE FROM portfolio_values")
@@ -62,8 +92,6 @@ def get_portfolio_returns(initial_investment=10000, rebalance_frequency='Y'):
     conn.commit()
 
 def get_benchmark_returns(initial_investment=10000):
-    conn = sqlite3.connect("portfolio.db")
-    cursor = conn.cursor()
     benchmark = get_benchmark_prices()
     returns = benchmark.pct_change().dropna()
     benchmark_value = (1 + returns).cumprod() * initial_investment
@@ -76,7 +104,6 @@ def get_benchmark_returns(initial_investment=10000):
     conn.commit()
 
 def plot_results():
-    conn = sqlite3.connect("portfolio.db")
     values = pd.read_sql("SELECT * FROM portfolio_values", conn)
     values['date'] = pd.to_datetime(values['date'])
     values = values.pivot(index='date', columns='portfolio_name', values='portfolio_value')
@@ -95,7 +122,6 @@ def plot_results():
     plt.savefig("portfolio_backtest.png")
 
 def performance_summary():
-    conn = sqlite3.connect("portfolio.db")
     values = pd.read_sql("SELECT * FROM portfolio_values", conn)
     values['date'] = pd.to_datetime(values['date'])
     values = values.pivot(index='date', columns='portfolio_name', values='portfolio_value')
@@ -128,7 +154,6 @@ def performance_summary():
     print(summary_df)
 
 def plot_all(save_folder="plots"):
-    conn = sqlite3.connect("portfolio.db")
     if not os.path.exists(save_folder):
         os.makedirs(save_folder)
     values = pd.read_sql("SELECT * FROM portfolio_values", conn)
@@ -205,36 +230,7 @@ def plot_all(save_folder="plots"):
 #   run_backtester()
 
 def run_backtester():
-    conn = sqlite3.connect("portfolio.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS portfolios (
-    portfolio_name TEXT,
-    ticker TEXT,
-    weight REAL,
-    PRIMARY KEY (portfolio_name, ticker)
-    )
-    """)
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS portfolio_values (
-    date TEXT,
-    portfolio_name TEXT,
-    portfolio_value REAL,
-    PRIMARY KEY (date, portfolio_name)
-    )
-    """)
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS transactions (
-    date TEXT,
-    portfolio_name TEXT,
-    ticker TEXT,
-    action TEXT,
-    shares REAL,
-    price REAL,
-    PRIMARY KEY(date, portfolio_name, ticker, action)
-    )
-    """)
-    conn.commit()
+    create_database_tables()
     cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Aggressive','SPY',0.8)")
     cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Aggressive','AGG',0.2)")
     cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Balanced','SPY',0.6)")

@@ -4,12 +4,12 @@ import sqlite3
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from portfolio_backtester import (
-    run_backtester
-)
+from portfolio_backtester import run_backtester
 
-run_backtester()
+def start_app():
+    run_backtester()
 
+start_app()
 conn = sqlite3.connect("portfolio.db")
 values = pd.read_sql("SELECT * FROM portfolio_values", conn)
 values['date'] = pd.to_datetime(values['date'])
