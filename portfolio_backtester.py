@@ -3,6 +3,8 @@ import sqlite3
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import pandas_datareader.data as web
+from datetime import datetime
 
 conn = sqlite3.connect("portfolio.db")
 cursor = conn.cursor()
@@ -36,8 +38,6 @@ CREATE TABLE IF NOT EXISTS transactions (
 conn.commit()
 
 def get_portfolio_prices():
-    import pandas_datareader.data as web
-    from datetime import datetime
     tickers = ['SPY', 'AGG']
     start = datetime(2015,1,1)
     end = datetime(2025,1,1)
@@ -49,8 +49,6 @@ def get_portfolio_prices():
     return price_data
 
 def get_benchmark_prices():
-    import pandas_datareader.data as web
-    from datetime import datetime
     start = datetime(2015,1,1)
     end = datetime(2025,1,1)
     benchmark = web.DataReader('SPY', 'stooq', start, end)['Close'].sort_index()
@@ -199,7 +197,6 @@ def plot_all(save_folder="plots"):
     plt.savefig(f"{save_folder}/monthly_returns_hist.png")
     plt.close()
     plt.figure(figsize=(12,6))
-    
     window = 252
     for col in values.columns:
         daily_returns = values[col].pct_change().dropna()

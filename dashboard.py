@@ -40,7 +40,6 @@ st.set_page_config(page_title="Portfolio Backtest Dashboard", layout="wide")
 st.title("📊 Portfolio Backtester Dashboard")
 portfolio_list = values.columns.tolist()
 selected_portfolios = st.multiselect("Select portfolios to analyze:", portfolio_list, default=portfolio_list)
-
 tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Drawdowns", "Returns", "Rolling Metrics"])
 with tab1:
     st.subheader("Portfolio Performance Summary")
