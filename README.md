@@ -15,6 +15,7 @@
 - Streamlit
 - SQL
 - SQLite
+- Pandas DataReader
 
 ### Features
 - Simulate multiple portfolio strategies with rebalancing and transaction tracking
@@ -22,11 +23,7 @@
 - Calculate key performance metrics: CAGR, volatility, Sharpe ratio, and maximum drawdown
 - Compare strategies against a benchmark (S&P 500)
 - Interactive Streamlit dashboard for performance analysis
-#### Example Strategies
-The project currently includes several example portfolio allocations:
-- Aggressive: 80% SPY / 20% AGG
-- Balanced: 60% SPY / 40% AGG
-- Conservative: 40% SPY / 60% AGG
+- Data visualization and charts with Plotly
 
 ### Setup 
    ```sh
