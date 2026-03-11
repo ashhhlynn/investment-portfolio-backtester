@@ -71,11 +71,11 @@ def get_benchmark_prices():
     return benchmark
 
 def get_portfolio_returns(initial_investment=10000, rebalance_frequency='Y'):
+    prices = get_portfolio_prices()
+    returns = prices.pct_change().dropna()
     cursor.execute("DELETE FROM portfolio_values")
     cursor.execute("DELETE FROM transactions")
     conn.commit()
-    prices = get_portfolio_prices()
-    returns = prices.pct_change().dropna()
     rebalance_dates = returns.resample(rebalance_frequency).first().index
     portfolios_df = pd.read_sql("SELECT * FROM portfolios", conn)
     portfolio_names = portfolios_df['portfolio_name'].unique()
