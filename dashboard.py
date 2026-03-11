@@ -60,6 +60,14 @@ with tab2:
     fig_dd = px.line(drawdowns, x=drawdowns.index, y=drawdowns.columns)
     fig_dd.update_layout(yaxis_title="Drawdown", xaxis_title="Date", template="plotly_white")
     st.plotly_chart(fig_dd, use_container_width=True)
-
+with tab3:
+    st.subheader("Monthly Returns Distribution")
+    monthly_returns = values[selected_portfolios].resample('M').last().pct_change().dropna()
+    fig_hist = go.Figure()
+    for col in monthly_returns.columns:
+        fig_hist.add_trace(go.Histogram(x=monthly_returns[col], name=col, opacity=0.6, nbinsx=50))
+    fig_hist.update_layout(barmode='overlay', xaxis_title="Return", yaxis_title="Frequency", template="plotly_white")
+    st.plotly_chart(fig_hist, use_container_width=True)
+    
 with st.expander("View Transactions Table"):
     st.dataframe(transactions.sort_values(["date", "portfolio_name"]), use_container_width=True)
