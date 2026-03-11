@@ -4,6 +4,4 @@ matplotlib
 streamlit
 plotly
 pandas-datareader
-sqlite3
-os
 datetime
