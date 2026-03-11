@@ -5,14 +5,10 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from portfolio_backtester import (
-    get_portfolio_returns,
-    get_benchmark_returns,
-    performance_summary
+    run_backtester
 )
 
-get_portfolio_returns()
-get_benchmark_returns()
-performance_summary()
+run_backtester()
 
 conn = sqlite3.connect("portfolio.db")
 values = pd.read_sql("SELECT * FROM portfolio_values", conn)
