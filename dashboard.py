@@ -8,14 +8,12 @@ from portfolio_backtester import (
     create_database_tables,
     get_portfolio_returns,
     get_benchmark_returns,
-    performance_summary,
 )
 
 def start_app():
     create_database_tables()
     get_portfolio_returns()
     get_benchmark_returns()
-    performance_summary()
 
 start_app()
 conn = sqlite3.connect("portfolio.db")
