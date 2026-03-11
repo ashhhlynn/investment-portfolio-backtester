@@ -68,6 +68,17 @@ with tab3:
         fig_hist.add_trace(go.Histogram(x=monthly_returns[col], name=col, opacity=0.6, nbinsx=50))
     fig_hist.update_layout(barmode='overlay', xaxis_title="Return", yaxis_title="Frequency", template="plotly_white")
     st.plotly_chart(fig_hist, use_container_width=True)
-    
+with tab4:
+    st.subheader("Rolling Sharpe Ratio & Volatility")
+    window = 63  
+    fig_rm = go.Figure()
+    for col in selected_portfolios:
+        daily_returns = values[col].pct_change().dropna()
+        rolling_sharpe = (daily_returns.rolling(window).mean() / daily_returns.rolling(window).std()) * np.sqrt(252)
+        rolling_vol = daily_returns.rolling(window).std() * np.sqrt(252)
+        fig_rm.add_trace(go.Scatter(x=rolling_sharpe.index, y=rolling_sharpe, mode='lines', name=f"{col} Sharpe"))
+        fig_rm.add_trace(go.Scatter(x=rolling_vol.index, y=rolling_vol, mode='lines', name=f"{col} Volatility"))
+    fig_rm.update_layout(yaxis_title="Metric Value", xaxis_title="Date", template="plotly_white")
+    st.plotly_chart(fig_rm, use_container_width=True)
 with st.expander("View Transactions Table"):
     st.dataframe(transactions.sort_values(["date", "portfolio_name"]), use_container_width=True)
