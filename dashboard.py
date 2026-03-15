@@ -12,7 +12,7 @@ from portfolio_backtester import (
 
 @st.cache_data
 def get_data():
-    create_database_tables()
+    create_database_tables()    
     get_portfolio_returns()
     get_benchmark_returns()
     conn = sqlite3.connect("portfolio.db")
@@ -25,31 +25,7 @@ def get_data():
 def start_app():
     values, transactions = get_data()
     values = values.pivot(index='date', columns='portfolio_name', values='portfolio_value')
-    summary = []
-    for portfolio_name in values.columns:
-        series = values[portfolio_name].dropna()
-        years = (series.index[-1] - series.index[0]).days / 365.25
-        start_value = series.iloc[0]
-        end_value = series.iloc[-1]
-        cagr = (end_value / start_value)**(1/years) - 1
-        daily_returns = series.pct_change().dropna()
-        vol = daily_returns.std() * np.sqrt(252)
-        sharpe = (daily_returns.mean() / daily_returns.std()) * np.sqrt(252)
-        rolling_max = series.cummax()
-        drawdown = (series - rolling_max) / rolling_max
-        max_dd = drawdown.min()
-        summary.append({
-            "Portfolio": portfolio_name,
-            "CAGR": cagr,
-            "Volatility": vol,
-            "Sharpe": sharpe,
-            "Max Drawdown": max_dd
-        })
-    summary_df = pd.DataFrame(summary)
-    summary_df['CAGR'] = summary_df['CAGR'].map("{:.2%}".format)
-    summary_df['Volatility'] = summary_df['Volatility'].map("{:.2%}".format)
-    summary_df['Max Drawdown'] = summary_df['Max Drawdown'].map("{:.2%}".format)
-    summary_df['Sharpe'] = summary_df['Sharpe'].map("{:.2f}".format)
+    summary_df = get_calculations_summary(values)
     st.set_page_config(page_title="Portfolio Backtest Dashboard", layout="wide")
     st.title("📊 Portfolio Backtester Dashboard")
     portfolio_list = values.columns.tolist()
@@ -95,5 +71,33 @@ def start_app():
         st.plotly_chart(fig_rm, use_container_width=True)
     with st.expander("View Transactions Table"):
         st.dataframe(transactions.sort_values(["date", "portfolio_name"]), use_container_width=True)
+
+def get_calculations_summary(values):
+    summary = []
+    for portfolio_name in values.columns:
+        series = values[portfolio_name].dropna()
+        years = (series.index[-1] - series.index[0]).days / 365.25
+        start_value = series.iloc[0]
+        end_value = series.iloc[-1]
+        cagr = (end_value / start_value)**(1/years) - 1
+        daily_returns = series.pct_change().dropna()
+        vol = daily_returns.std() * np.sqrt(252)
+        sharpe = (daily_returns.mean() / daily_returns.std()) * np.sqrt(252)
+        rolling_max = series.cummax()
+        drawdown = (series - rolling_max) / rolling_max
+        max_dd = drawdown.min()
+        summary.append({
+            "Portfolio": portfolio_name,
+            "CAGR": cagr,
+            "Volatility": vol,
+            "Sharpe": sharpe,
+            "Max Drawdown": max_dd
+        })
+    summary_df = pd.DataFrame(summary)
+    summary_df['CAGR'] = summary_df['CAGR'].map("{:.2%}".format)
+    summary_df['Volatility'] = summary_df['Volatility'].map("{:.2%}".format)
+    summary_df['Max Drawdown'] = summary_df['Max Drawdown'].map("{:.2%}".format)
+    summary_df['Sharpe'] = summary_df['Sharpe'].map("{:.2f}".format)
+    return summary_df
 
 start_app()

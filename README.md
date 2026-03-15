@@ -10,11 +10,12 @@
 #### :link: <a href="https://investment-portfolio-backtester.streamlit.app/">Dashboard</a></b>
 
 ### Technologies
-- Python 3.8+
+- Python 3.12+
 - Pandas
 - NumPy
 - Plotly
 - Streamlit
+- Yfinance
 - SQL
 - SQLite
 
@@ -35,9 +36,6 @@
    ```
    ```sh
    $ pip install -r requirements.txt
-   ```
-   ```sh
-   $ python portfolio_backtester.py
    ```
    ```sh
    $ streamlit run dashboard.py
