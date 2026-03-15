@@ -43,7 +43,7 @@ def create_database_tables():
 
 def get_portfolio_prices():
     tickers = ['SPY', 'AGG']
-    start = "2015-01-01"
+    start = "2014-01-01"
     end = "2025-01-01"
     data = yf.download(tickers, start=start, end=end, progress=False)
     price_data = data['Close']
@@ -51,7 +51,7 @@ def get_portfolio_prices():
     return price_data
 
 def get_benchmark_prices():
-    start = "2015-01-01"
+    start = "2014-12-31"
     end = "2025-01-01"
     data = yf.download("SPY", start=start, end=end, progress=False)
     benchmark = data["Close"].squeeze() 
