@@ -33,7 +33,7 @@ def start_app():
     tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Drawdowns", "Returns", "Rolling Metrics"])
     with tab1:
         st.subheader("Portfolio Performance Summary")
-        st.dataframe(summary_df[summary_df['Portfolio'].isin(selected_portfolios)], use_container_width=True)
+        st.dataframe(summary_df[summary_df['Portfolio'].isin(selected_portfolios)], use_container_width=True, hide_index=True)
         st.subheader("Portfolio Value Over Time")
         fig_value = go.Figure()
         for col in selected_portfolios:
@@ -69,8 +69,7 @@ def start_app():
             fig_rm.add_trace(go.Scatter(x=rolling_vol.index, y=rolling_vol, mode='lines', name=f"{col} Volatility"))
         fig_rm.update_layout(yaxis_title="Metric Value", xaxis_title="Date", template="plotly_white")
         st.plotly_chart(fig_rm, use_container_width=True)
-    with st.expander("View Transactions Table"):
-        st.dataframe(transactions.sort_values(["date", "portfolio_name"]), use_container_width=True)
+    get_recent_transactions(transactions)
 
 def get_calculations_summary(values):
     summary = []
@@ -99,5 +98,13 @@ def get_calculations_summary(values):
     summary_df['Max Drawdown'] = summary_df['Max Drawdown'].map("{:.2%}".format)
     summary_df['Sharpe'] = summary_df['Sharpe'].map("{:.2f}".format)
     return summary_df
+
+def get_recent_transactions(transactions):
+    recent = transactions.sort_values(["date"]).tail(10)
+    recent.columns = recent.columns.str.replace('_', ' ').str.title()
+    recent['Date'] = recent['Date'].dt.date
+    recent['Action'] = recent['Action'].str.title()
+    with st.expander("Recent Rebalancing Trades"):
+        st.dataframe(recent, hide_index=True)
 
 start_app()
