@@ -20,18 +20,19 @@ def get_data():
     values['date'] = pd.to_datetime(values['date'])
     transactions = pd.read_sql("SELECT * FROM transactions", conn)
     transactions['date'] = pd.to_datetime(transactions['date'])
-    return values, transactions
+    weights = pd.read_sql("SELECT * FROM portfolios", conn)
+    return values, transactions, weights
 
 def start_app():
-    values, transactions = get_data()
+    values, transactions, weights = get_data()
     values = values.pivot(index='date', columns='portfolio_name', values='portfolio_value')
     summary_df = get_calculations_summary(values)
     st.set_page_config(page_title="Portfolio Backtest Dashboard", layout="wide")
     st.title("📊 Portfolio Backtester")
-    portfolio_list = values.columns.tolist()
+    portfolio_list = values.columns
     selected_portfolios = st.multiselect("Select portfolios to analyze:", portfolio_list, default=portfolio_list)
     tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Drawdowns", "Returns", "Rolling Metrics"])
-    with tab1:
+    with tab1: 
         st.subheader("Portfolio Performance Summary")
         st.dataframe(summary_df[summary_df['Portfolio'].isin(selected_portfolios)], use_container_width=True, hide_index=True)
         st.subheader("Portfolio Value Over Time")
@@ -69,7 +70,7 @@ def start_app():
             fig_rm.add_trace(go.Scatter(x=rolling_vol.index, y=rolling_vol, mode='lines', name=f"{col} Volatility"))
         fig_rm.update_layout(yaxis_title="Metric Value", xaxis_title="Date", template="plotly_white")
         st.plotly_chart(fig_rm, use_container_width=True)
-    get_recent_transactions(transactions)
+    get_recent_transactions(transactions, weights)
 
 def get_calculations_summary(values):
     summary = []
@@ -99,12 +100,22 @@ def get_calculations_summary(values):
     summary_df['Sharpe'] = summary_df['Sharpe'].map("{:.2f}".format)
     return summary_df
 
-def get_recent_transactions(transactions):
+def get_recent_transactions(transactions, weights):
     recent = transactions.sort_values(["date"]).tail(10)
     recent.columns = recent.columns.str.replace('_', ' ').str.title()
     recent['Date'] = recent['Date'].dt.date
     recent['Action'] = recent['Action'].str.title()
-    with st.expander("Recent Rebalancing Trades"):
-        st.dataframe(recent, hide_index=True)
+    with st.expander("Portfolio Allocations and Transactions"):
+        cols = st.columns([10,1,8])
+        with cols[0]:
+            st.markdown(' ')
+            st.dataframe(recent, hide_index=True)
+        with cols[2]:
+            st.markdown(' ')
+            st.markdown(' ')
+            st.markdown(' ')
+            st.markdown(' ')
+            weights = weights.pivot(index='portfolio_name', columns='ticker', values='weight')
+            st.bar_chart(weights, stack=False, horizontal=False)   
 
 start_app()
