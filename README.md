@@ -15,9 +15,9 @@
 - NumPy
 - Plotly
 - Streamlit
-- Yfinance
 - SQL
 - SQLite
+- Yfinance
 
 ### Features
 - Simulate multiple portfolio strategies with rebalancing and transaction tracking
