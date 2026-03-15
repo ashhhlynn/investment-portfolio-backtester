@@ -1,2 +1,4 @@
 [theme]
-primaryColor = "#458fcb"
+primaryColor = "#4c9bdb"
+dataframeBorderColor = "#dbe4ef"
+borderColor= "#dbe4ef"

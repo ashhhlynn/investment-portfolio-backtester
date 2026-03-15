@@ -27,7 +27,7 @@ def start_app():
     values = values.pivot(index='date', columns='portfolio_name', values='portfolio_value')
     summary_df = get_calculations_summary(values)
     st.set_page_config(page_title="Portfolio Backtest Dashboard", layout="wide")
-    st.title("📊 Portfolio Backtester Dashboard")
+    st.title("📊 Portfolio Backtester")
     portfolio_list = values.columns.tolist()
     selected_portfolios = st.multiselect("Select portfolios to analyze:", portfolio_list, default=portfolio_list)
     tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Drawdowns", "Returns", "Rolling Metrics"])
@@ -38,7 +38,7 @@ def start_app():
         fig_value = go.Figure()
         for col in selected_portfolios:
             if "Benchmark" in col:
-                fig_value.add_trace(go.Scatter(x=values.index, y=values[col], mode='lines', name=col, line=dict(dash='dash', color='black')))
+                fig_value.add_trace(go.Scatter(x=values.index, y=values[col], mode='lines', name=col, line=dict(dash='dash', color='#4c9bdb')))
             else:
                 fig_value.add_trace(go.Scatter(x=values.index, y=values[col], mode='lines', name=col))
         fig_value.update_layout(yaxis_title="Portfolio Value ($)", xaxis_title="Date", template="plotly_white")
