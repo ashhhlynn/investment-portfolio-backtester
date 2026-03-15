@@ -17,7 +17,6 @@
 - Streamlit
 - SQL
 - SQLite
-- Pandas DataReader
 
 ### Features
 - Simulate multiple portfolio strategies with rebalancing and transaction tracking

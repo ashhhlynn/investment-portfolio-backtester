@@ -4,23 +4,27 @@ import sqlite3
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-
 from portfolio_backtester import (
     create_database_tables,
     get_portfolio_returns,
     get_benchmark_returns,
 )
 
-def start_app():
+@st.cache_data
+def get_data():
     create_database_tables()
     get_portfolio_returns()
     get_benchmark_returns()
     conn = sqlite3.connect("portfolio.db")
     values = pd.read_sql("SELECT * FROM portfolio_values", conn)
     values['date'] = pd.to_datetime(values['date'])
-    values = values.pivot(index='date', columns='portfolio_name', values='portfolio_value')
     transactions = pd.read_sql("SELECT * FROM transactions", conn)
     transactions['date'] = pd.to_datetime(transactions['date'])
+    return values, transactions
+
+def start_app():
+    values, transactions = get_data()
+    values = values.pivot(index='date', columns='portfolio_name', values='portfolio_value')
     summary = []
     for portfolio_name in values.columns:
         series = values[portfolio_name].dropna()
