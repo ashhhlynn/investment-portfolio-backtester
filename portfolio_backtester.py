@@ -1,10 +1,7 @@
 import pandas as pd
 import sqlite3
-import matplotlib.pyplot as plt
 import numpy as np
-import os
-import pandas_datareader.data as web
-from datetime import datetime
+import yfinance as yf
 
 conn = sqlite3.connect("portfolio.db")
 cursor = conn.cursor()
@@ -47,26 +44,18 @@ def create_database_tables():
 
 def get_portfolio_prices():
     tickers = ['SPY', 'AGG']
-    start = datetime(2015,1,1)
-    end = datetime(2025,1,1)
-    price_data = pd.DataFrame()
-    for ticker in tickers:
-        df = web.DataReader(ticker, 'stooq', start, end)
-        if 'Close' in df.columns:
-            close = df['Close']
-        elif 'close' in df.columns:
-            close = df['close']
-        else:
-            raise ValueError(f"No close price found for {ticker}")
-        close = close.sort_index()
-        price_data[ticker] = close
+    start = "2015-01-01"
+    end = "2025-01-01"
+    data = yf.download(tickers, start=start, end=end, progress=False)
+    price_data = data['Close']
     price_data.index = pd.to_datetime(price_data.index)
     return price_data
 
 def get_benchmark_prices():
-    start = datetime(2015,1,1)
-    end = datetime(2025,1,1)
-    benchmark = web.DataReader('SPY', 'stooq', start, end)['Close'].sort_index()
+    start = "2015-01-01"
+    end = "2025-01-01"
+    data = yf.download("SPY", start=start, end=end, progress=False)
+    benchmark = data["Close"].squeeze() 
     benchmark.index = pd.to_datetime(benchmark.index)
     return benchmark
 
@@ -100,7 +89,7 @@ def get_portfolio_returns(initial_investment=10000, rebalance_frequency='Y'):
                 cursor.execute("""
                 INSERT OR REPLACE INTO portfolio_values
                 VALUES (?,?,?)
-                """, (str(date.date()), portfolio_name, float(value)))
+                """, (str(date), portfolio_name, float(value)))
             portfolio_value = float(daily_value.iloc[-1])
     conn.commit()
 
@@ -113,7 +102,7 @@ def get_benchmark_returns(initial_investment=10000):
         cursor.execute("""
         INSERT OR REPLACE INTO portfolio_values
         VALUES (?,?,?)
-        """, (str(date.date()), "SPY Benchmark", float(value)))
+        """, (str(date), "SPY Benchmark", float(value)))
     conn.commit()
 
 def performance_summary():
@@ -147,97 +136,6 @@ def performance_summary():
     summary_df['Max Drawdown'] = summary_df['Max Drawdown'].map("{:.2%}".format)
     summary_df['Sharpe'] = summary_df['Sharpe'].map("{:.2f}".format)
     print(summary_df)
-
-def plot_results():
-    values = pd.read_sql("SELECT * FROM portfolio_values", conn)
-    values['date'] = pd.to_datetime(values['date'])
-    values = values.pivot(index='date', columns='portfolio_name', values='portfolio_value')
-    plt.figure(figsize=(12,6))
-    for column in values.columns:
-        if column == "SPY Benchmark":
-            plt.plot(values.index, values[column], linestyle="--", color="black", label=column)
-        else:
-            plt.plot(values.index, values[column], label=column)
-    plt.title("Portfolio Strategies vs S&P 500 Benchmark")
-    plt.xlabel("Date")
-    plt.ylabel("Portfolio Value ($)")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig("portfolio_backtest.png")
-
-def plot_all(save_folder="plots"):
-    if not os.path.exists(save_folder):
-        os.makedirs(save_folder)
-    values = pd.read_sql("SELECT * FROM portfolio_values", conn)
-    values['date'] = pd.to_datetime(values['date'])
-    values = values.pivot(index='date', columns='portfolio_name', values='portfolio_value')
-    plt.figure(figsize=(12,6))
-    for col in values.columns:
-        if col == "SPY Benchmark":
-            plt.plot(values.index, values[col], linestyle="--", color="black", label=col)
-        else:
-            plt.plot(values.index, values[col], label=col)
-    plt.title("Portfolio Strategies vs S&P 500 Benchmark")
-    plt.xlabel("Date")
-    plt.ylabel("Portfolio Value ($)")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(f"{save_folder}/portfolio_vs_benchmark.png")
-    plt.close()
-    plt.figure(figsize=(12,6))
-    for col in values.columns:
-        cumulative_max = values[col].cummax()
-        drawdown = (values[col] - cumulative_max) / cumulative_max
-        plt.plot(drawdown, label=col)
-    plt.title("Portfolio Drawdowns Over Time")
-    plt.ylabel("Drawdown")
-    plt.xlabel("Date")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(f"{save_folder}/drawdowns.png")
-    plt.close()
-    monthly_returns = values.resample('M').last().pct_change().dropna()
-    plt.figure(figsize=(12,6))
-    for col in monthly_returns.columns:
-        plt.hist(monthly_returns[col], bins=50, alpha=0.5, label=col)
-    plt.title("Monthly Returns Distribution")
-    plt.xlabel("Return")
-    plt.ylabel("Frequency")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(f"{save_folder}/monthly_returns_hist.png")
-    plt.close()
-    plt.figure(figsize=(12,6))
-    window = 252
-    for col in values.columns:
-        daily_returns = values[col].pct_change().dropna()
-        rolling_sharpe = (daily_returns.rolling(window).mean() / daily_returns.rolling(window).std()) * np.sqrt(252)
-        plt.plot(rolling_sharpe, label=col)
-    plt.title(f"{window}-Day Rolling Sharpe Ratio")
-    plt.xlabel("Date")
-    plt.ylabel("Rolling Sharpe")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(f"{save_folder}/rolling_sharpe.png")
-    plt.close()
-    plt.figure(figsize=(12,6))
-    for col in values.columns:
-        daily_returns = values[col].pct_change().dropna()
-        rolling_vol = daily_returns.rolling(window).std() * np.sqrt(252)
-        plt.plot(rolling_vol, label=col)
-    plt.title(f"{window}-Day Rolling Volatility")
-    plt.xlabel("Date")
-    plt.ylabel("Annualized Volatility")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(f"{save_folder}/rolling_volatility.png")
-    plt.close()
 
 if __name__ == "__main__":
     create_database_tables()

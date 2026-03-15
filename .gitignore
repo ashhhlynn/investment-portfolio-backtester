@@ -2,4 +2,5 @@ portfolio.db
 plots/
 ASI_VENV/
 .vscode/
-portfolio_backtest.png
+__pycache__/
+la.py
