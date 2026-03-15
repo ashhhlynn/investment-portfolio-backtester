@@ -59,7 +59,7 @@ def start_app():
         st.plotly_chart(fig_hist, use_container_width=True)
     with tab4:
         st.subheader("Rolling Sharpe Ratio & Volatility")
-        window = 63  
+        window = 63
         fig_rm = go.Figure()
         for col in selected_portfolios:
             daily_returns = values[col].pct_change().dropna()
