@@ -28,7 +28,7 @@ def start_app():
     summary_df = get_calculations_summary(values)
     st.set_page_config(page_title="Portfolio Backtest Dashboard", layout="wide")
     st.title("📊 Portfolio Backtester")
-    portfolio_list = values.columns.tolist()
+    portfolio_list = values.columns.tolist()    
     selected_portfolios = st.multiselect("Select portfolios to analyze:", portfolio_list, default=portfolio_list)
     tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Drawdowns", "Returns", "Rolling Metrics"])
     with tab1: 
@@ -112,7 +112,7 @@ def get_rolling_charts(selected_portfolios, values):
     st.plotly_chart(fig_rm, use_container_width=True)
 
 def get_recent_transactions(transactions):
-    recent = transactions.sort_values(["date"]).tail(10)
+    recent = transactions.sort_values(["date"]).tail(20)
     recent.columns = recent.columns.str.replace('_', ' ').str.title()
     recent['Date'] = recent['Date'].dt.date
     recent['Action'] = recent['Action'].str.title()
