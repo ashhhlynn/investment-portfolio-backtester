@@ -76,7 +76,7 @@ def get_values_chart(selected_portfolios, values):
     fig_value = go.Figure()
     for col in selected_portfolios:
         if "Benchmark" in col:
-            fig_value.add_trace(go.Scatter(x=values.index, y=values[col], mode='lines', name=col, line=dict(dash='dash', color='#4c9bdb')))
+            fig_value.add_trace(go.Scatter(x=values.index, y=values[col], mode='lines', name=col, line=dict(dash='dash', color='black')))
         else:
             fig_value.add_trace(go.Scatter(x=values.index, y=values[col], mode='lines', name=col))
     fig_value.update_layout(yaxis_title="Portfolio Value ($)", xaxis_title="Date", template="plotly_white")

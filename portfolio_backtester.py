@@ -33,16 +33,16 @@ def create_database_tables():
         PRIMARY KEY(date, portfolio_name, ticker, action)
     )
     """)
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Aggressive','SPY',0.8)")
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Aggressive','AGG',0.2)")
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Balanced','SPY',0.6)")
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Balanced','AGG',0.4)")
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Conservative','SPY',0.4)")
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Conservative','AGG',0.6)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Momentum','MTUM',0.9)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Momentum','AGG',0.1)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Value','VTV',0.9)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Value','AGG',0.1)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Quality','QUAL',0.9)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Quality','AGG',0.1)")
     conn.commit()
 
 def get_portfolio_prices():
-    tickers = ['SPY', 'AGG']
+    tickers = ['MTUM', 'VTV', 'QUAL', 'AGG']
     start = "2014-01-01"
     end = "2025-01-01"
     data = yf.download(tickers, start=start, end=end, progress=False)
