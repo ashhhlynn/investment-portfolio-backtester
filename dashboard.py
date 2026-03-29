@@ -93,14 +93,14 @@ def get_summary_chart(selected_portfolios, summary_df):
         "{:.2f}%", subset=['CAGR', 'Volatility', 'Max Drawdown']
     )
     st.dataframe(styled_df, use_container_width=True, hide_index=True, column_config={
-        "Sharpe": {"alignment": "right"} 
+        "Sharpe":  {"alignment": "right"}
     })   
 
 def get_values_chart(selected_portfolios, values):
     fig_value = go.Figure()
     for col in selected_portfolios:
         if "Benchmark" in col:
-            fig_value.add_trace(go.Scatter(x=values.index, y=values[col], mode='lines', name=col, line=dict(dash='dash', color='black')))
+            fig_value.add_trace(go.Scatter(x=values.index, y=values[col], mode='lines', name=col, line=dict(dash='dash', color='navy')))
         else:
             fig_value.add_trace(go.Scatter(x=values.index, y=values[col], mode='lines', name=col))
     fig_value.update_layout(legend_title="Portfolio", yaxis_title="Portfolio Value ($)", xaxis_title="Date", template="plotly_white")
@@ -148,7 +148,10 @@ def get_rolling_charts(selected_portfolios, values):
     for col in selected_portfolios:
         daily_returns = values[col].pct_change().dropna()
         rolling_sharpe = (daily_returns.rolling(window).mean() / daily_returns.rolling(window).std()) * np.sqrt(252)
-        fig_rm.add_trace(go.Scatter(x=rolling_sharpe.index, y=rolling_sharpe, mode='lines', name=col))
+        if "Benchmark" in col:
+            fig_rm.add_trace(go.Scatter(x=rolling_sharpe.index, y=rolling_sharpe, mode='lines', name=col, line=dict(dash='dash', color='navy')))
+        else:
+            fig_rm.add_trace(go.Scatter(x=rolling_sharpe.index, y=rolling_sharpe, mode='lines', name=col))
     fig_rm.add_hline(y=0, line_dash="dash", opacity=0.6)
     fig_rm.add_hline(y=1, line_dash="dot", opacity=0.6)
     fig_rm.update_layout(yaxis_title="Sharpe Ratio", xaxis_title="Date", template="plotly_white", legend_title="Portfolio")
