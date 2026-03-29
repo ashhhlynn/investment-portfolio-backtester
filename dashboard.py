@@ -33,7 +33,7 @@ def start_app():
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Overview", "Annual Returns", "Risk vs. Return", "Drawdowns", "Returns", "Rolling Metrics"])
     with tab1: 
         st.subheader("Portfolio Performance Summary")
-        st.dataframe(summary_df[summary_df['Portfolio'].isin(selected_portfolios)], use_container_width=True, hide_index=True)
+        get_summary_chart(selected_portfolios, summary_df)
         get_values_chart(selected_portfolios, values)
     with tab2:
         get_annual_returns_chart(selected_portfolios, values)
@@ -74,6 +74,24 @@ def get_calculations_summary(values):
     summary_df['Max Drawdown'] = summary_df['Max Drawdown'].map("{:.2%}".format)
     summary_df['Sharpe'] = summary_df['Sharpe'].map("{:.2f}".format)
     return summary_df
+
+def get_summary_chart(selected_portfolios, summary_df):
+    mask = summary_df['Portfolio'].isin(selected_portfolios)
+    filtered_df = summary_df[mask]
+    filtered_df['CAGR'] = pd.to_numeric(filtered_df['CAGR'].str.replace('%', '', regex=False))
+    filtered_df['Volatility'] = pd.to_numeric(filtered_df['Volatility'].str.replace('%', '', regex=False))  
+    filtered_df['Max Drawdown'] = pd.to_numeric(filtered_df['Max Drawdown'].str.replace('%', '', regex=False))  
+    styled_df = filtered_df.style\
+    .background_gradient(subset=['CAGR', 'Sharpe'], cmap='GnBu', low=.9, high=.9)\
+    .background_gradient(subset=['Volatility'], cmap='GnBu_r', low=.9, high=.9)\
+    .background_gradient(subset=['Max Drawdown'], cmap='GnBu', low=.9, high=.9)\
+    .format("{:.2f}%", subset=['CAGR', 'Volatility', 'Max Drawdown'])\
+    
+    st.dataframe(styled_df, use_container_width=True, hide_index=True, column_config={
+        "CAGR": {"alignment": "left"}, 
+        "Volatility": {"alignment": "left"},    
+        "Max Drawdown": {"alignment": "left"}    
+    })
 
 def get_values_chart(selected_portfolios, values):
     st.subheader("Portfolio Value Over Time")
