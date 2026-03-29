@@ -117,10 +117,11 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
         fig_rr.add_trace(go.Scatter(x=[vol_value], y=[cagr_value], mode='markers', name=col, marker=dict(size=24)))
     fig_rr.update_layout(
         template='plotly_white',
-        xaxis=dict(dtick=2, tickmode='linear', range=[0, 22], title='Volatility (%)'),
-        yaxis=dict(dtick=5, tickmode='linear', range=[0, 22], title='CAGR (%)'),
+        xaxis=dict( title='Volatility (%)'),
+        yaxis=dict(title='CAGR (%)'),
         legend_title="Portfolio"
     )
+    fig_rr.update_yaxes(scaleanchor="x", scaleratio=1) 
     st.plotly_chart(fig_rr, use_container_width=True)
 
 def get_annual_returns_chart(selected_portfolios, values):
