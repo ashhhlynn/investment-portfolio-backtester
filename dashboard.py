@@ -16,7 +16,7 @@ def get_data():
     get_portfolio_returns()
     get_benchmark_returns()
     conn = sqlite3.connect("portfolio.db")
-    values = pd.read_sql("SELECT * FROM portfolio_values", conn)
+    values = pd.read_sql("SELECT * FROM portfolio_values ", conn)
     values['date'] = pd.to_datetime(values['date'])
     transactions = pd.read_sql("SELECT * FROM transactions", conn)
     transactions['date'] = pd.to_datetime(transactions['date'])
@@ -34,14 +34,19 @@ def start_app():
     with tab1: 
         st.subheader("Portfolio Performance Summary")
         get_summary_chart(selected_portfolios, summary_df)
+        st.subheader("Portfolio Value Over Time")
         get_values_chart(selected_portfolios, values)
     with tab2:
+        st.subheader("Portfolio Risk vs. Return")
         get_risk_returns_chart(selected_portfolios, summary_df)
     with tab3:
+        st.subheader("Portfolio Annual Returns")
         get_annual_returns_chart(selected_portfolios, values)
     with tab4:
+        st.subheader("Portfolio Drawdowns Over Time")    
         get_drawdowns_chart(selected_portfolios, values)
     with tab5:
+        st.subheader("Portfolio Rolling Sharpe Ratio")
         get_rolling_charts(selected_portfolios, values)
     get_recent_transactions(transactions)
 
@@ -79,30 +84,18 @@ def get_summary_chart(selected_portfolios, summary_df):
     filtered_df['CAGR'] = pd.to_numeric(filtered_df['CAGR'].str.replace('%', '', regex=False))
     filtered_df['Volatility'] = pd.to_numeric(filtered_df['Volatility'].str.replace('%', '', regex=False))  
     filtered_df['Max Drawdown'] = pd.to_numeric(filtered_df['Max Drawdown'].str.replace('%', '', regex=False))  
-
-    
     styled_df = filtered_df.style.background_gradient(
-    subset=['Max Drawdown', 'CAGR', 'Sharpe'], 
-    cmap='GnBu', 
-    low=0.9,
-    high=.9
+        subset=['Max Drawdown', 'CAGR', 'Sharpe'], cmap='GnBu', low=0.95, high=0.95
     ).background_gradient(
-    subset=['Volatility'], cmap='GnBu_r', low=.9, high=.9
+        subset=['Volatility'], cmap='GnBu_r', low=.95, high=.95
     ).format(
-    "{:.2f}%", 
-    subset=['CAGR', 'Volatility', 'Max Drawdown']
+        "{:.2f}%", subset=['CAGR', 'Volatility', 'Max Drawdown']
     )
-    
     st.dataframe(styled_df, use_container_width=True, hide_index=True, column_config={
-        "CAGR": {"alignment": "left"}, 
-        "Volatility": {"alignment": "left"},    
-        "Max Drawdown": {"alignment": "left"}  
-    })
-
-    
+        "Sharpe": {"alignment": "right"} 
+    })   
 
 def get_values_chart(selected_portfolios, values):
-    st.subheader("Portfolio Value Over Time")
     fig_value = go.Figure()
     for col in selected_portfolios:
         if "Benchmark" in col:
@@ -112,8 +105,24 @@ def get_values_chart(selected_portfolios, values):
     fig_value.update_layout(legend_title="Portfolio", yaxis_title="Portfolio Value ($)", xaxis_title="Date", template="plotly_white")
     st.plotly_chart(fig_value, use_container_width=True)
 
+def get_risk_returns_chart(selected_portfolios, summary_df):
+    fig_rr = go.Figure()
+    summary_df_copy = summary_df.copy()
+    summary_df_copy['CAGR'] = pd.to_numeric(summary_df_copy['CAGR'].str.replace('%', '', regex=False))
+    summary_df_copy['Volatility'] = pd.to_numeric(summary_df_copy['Volatility'].str.replace('%', '', regex=False))        
+    for col in selected_portfolios:
+        cagr_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'CAGR'].values[0]
+        vol_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Volatility'].values[0]
+        fig_rr.add_trace(go.Scatter(x=[vol_value], y=[cagr_value], mode='markers', name=col, marker=dict(size=24)))
+    fig_rr.update_layout(
+        template='plotly_white',
+        xaxis=dict(dtick=2, tickmode='linear', range=[0, 22], title='Volatility (%)'),
+        yaxis=dict(dtick=5, tickmode='linear', range=[0, 22], title='CAGR (%)'),
+        legend_title="Portfolio"
+    )
+    st.plotly_chart(fig_rr, use_container_width=True)
+
 def get_annual_returns_chart(selected_portfolios, values):
-    st.subheader("Portfolio Annual Returns")
     annual_prices = values.resample('YE').last()
     first_day = values.iloc[:1]
     combined_data = pd.concat([first_day, annual_prices])
@@ -127,34 +136,12 @@ def get_annual_returns_chart(selected_portfolios, values):
     st.dataframe(styled_table, use_container_width=True)
 
 def get_drawdowns_chart(selected_portfolios, values):
-    st.subheader("Portfolio Drawdowns Over Time")    
     drawdowns = values[selected_portfolios] / values[selected_portfolios].cummax() - 1
     fig_dd = px.line(drawdowns, x=drawdowns.index, y=drawdowns.columns)
     fig_dd.update_layout(legend_title="Portfolio", yaxis_title="Drawdown (%)", yaxis_tickformat=".0%", xaxis_title="Date", template="plotly_white")
     st.plotly_chart(fig_dd, use_container_width=True)
 
-def get_risk_returns_chart(selected_portfolios, summary_df):
-    st.subheader("Portfolio Risk vs. Return")
-    fig_rr = go.Figure()
-    summary_df_copy = summary_df.copy()
-    summary_df_copy['CAGR'] = pd.to_numeric(summary_df_copy['CAGR'].str.replace('%', '', regex=False))
-    summary_df_copy['Volatility'] = pd.to_numeric(summary_df_copy['Volatility'].str.replace('%', '', regex=False))        
-    for col in selected_portfolios:
-        cagr_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'CAGR'].values[0]
-        vol_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Volatility'].values[0]
-        fig_rr.add_trace(go.Scatter(x=[vol_value], y=[cagr_value], mode='markers', name=col, marker=dict(size=24)))
-    fig_rr.update_layout(
-        xaxis_title='Volatility (%)',
-        yaxis_title='CAGR (%)',
-        template='plotly_white',
-        xaxis=dict(dtick=2, tickmode='linear', range=[0, 22], title='Volatility (%)'),
-        yaxis=dict(dtick=5, tickmode='linear', range=[0, 22], title='CAGR (%)'),
-        legend_title="Portfolio"
-    )
-    st.plotly_chart(fig_rr, use_container_width=True)
-
 def get_rolling_charts(selected_portfolios, values):
-    st.subheader("Portfolio Rolling Sharpe Ratio")
     window = 252
     fig_rm = go.Figure()
     for col in selected_portfolios:
