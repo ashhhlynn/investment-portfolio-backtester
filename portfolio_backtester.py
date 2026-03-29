@@ -33,17 +33,17 @@ def create_database_tables():
         PRIMARY KEY(date, portfolio_name, ticker, action)
     )
     """)
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Momentum','MTUM',0.9)")
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Momentum','AGG',0.1)")
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Value','VTV',0.9)")
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Value','AGG',0.1)")
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Quality','QUAL',0.9)")
-    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Quality','AGG',0.1)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Momentum','MTUM',1)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Momentum','AGG',0)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Value','VTV',1)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Value','AGG',0)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Quality','QUAL',1)")
+    cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Quality','AGG',0)")
     conn.commit()
 
 def get_portfolio_prices():
     tickers = ['MTUM', 'VTV', 'QUAL', 'AGG']
-    start = "2014-01-01"
+    start = "2015-01-01"
     end = "2025-01-01"
     data = yf.download(tickers, start=start, end=end, progress=False)
     price_data = data['Close']
@@ -51,45 +51,40 @@ def get_portfolio_prices():
     return price_data
 
 def get_benchmark_prices():
-    start = "2014-12-31"
+    start = "2015-01-01"
     end = "2025-01-01"
     data = yf.download("SPY", start=start, end=end, progress=False)
     benchmark = data["Close"].squeeze() 
     benchmark.index = pd.to_datetime(benchmark.index)
     return benchmark
 
-def get_portfolio_returns(initial_investment=10000, rebalance_frequency='Y'):
+def get_portfolio_returns(initial_investment=10000):
     prices = get_portfolio_prices()
-    returns = prices.pct_change().dropna()
     cursor.execute("DELETE FROM portfolio_values")
     cursor.execute("DELETE FROM transactions")
     conn.commit()
-    rebalance_dates = returns.resample(rebalance_frequency).first().index
     portfolios_df = pd.read_sql("SELECT * FROM portfolios", conn)
     portfolio_names = portfolios_df['portfolio_name'].unique()
     for portfolio_name in portfolio_names:
         weights_df = portfolios_df[portfolios_df['portfolio_name'] == portfolio_name]
         weights = dict(zip(weights_df['ticker'], weights_df['weight']))
         portfolio_value = initial_investment
-        for i in range(len(rebalance_dates)-1):
-            start = rebalance_dates[i]
-            end = rebalance_dates[i+1]
-            period_prices = prices.loc[start:end]
-            shares = {}
-            for ticker, weight in weights.items():
-                price = float(period_prices.iloc[0][ticker])
-                shares[ticker] = (portfolio_value * weight) / price
-                cursor.execute("""
-                INSERT OR REPLACE INTO transactions
-                VALUES (?,?,?,?,?,?)
-                """, (str(start.date()), portfolio_name, ticker, "buy", shares[ticker], price))
-            daily_value = (period_prices * pd.Series(shares)).sum(axis=1)
-            for date, value in daily_value.items():
-                cursor.execute("""
-                INSERT OR REPLACE INTO portfolio_values
-                VALUES (?,?,?)
-                """, (str(date), portfolio_name, float(value)))
-            portfolio_value = float(daily_value.iloc[-1])
+        period_prices = prices.copy()
+        shares = {}
+        first_date = period_prices.index[0]
+        for ticker, weight in weights.items():
+            price = float(period_prices.iloc[0][ticker])
+            shares[ticker] = (portfolio_value * weight) / price
+            cursor.execute("""
+            INSERT OR REPLACE INTO transactions
+            VALUES (?,?,?,?,?,?)
+            """, (str(first_date.date()), portfolio_name, ticker, "buy", shares[ticker], price))
+        daily_value = (period_prices * pd.Series(shares)).sum(axis=1)
+        for date, value in daily_value.items():
+            cursor.execute("""
+            INSERT OR REPLACE INTO portfolio_values
+            VALUES (?,?,?)
+            """, (str(date), portfolio_name, float(value)))   
     conn.commit()
 
 def get_benchmark_returns(initial_investment=10000):
@@ -97,6 +92,11 @@ def get_benchmark_returns(initial_investment=10000):
     returns = benchmark.pct_change().dropna()
     benchmark_value = (1 + returns).cumprod() * initial_investment
     benchmark_value.index = pd.to_datetime(benchmark_value.index)
+    start_date = "2015-01-02 00:00:00"
+    cursor.execute("""
+    INSERT OR REPLACE INTO portfolio_values
+    VALUES (?,?,?)
+    """, (str(start_date), "SPY Benchmark", float(initial_investment)))
     for date, value in benchmark_value.items():
         cursor.execute("""
         INSERT OR REPLACE INTO portfolio_values

@@ -42,7 +42,6 @@ def start_app():
     with tab4:
         get_rolling_charts(selected_portfolios, values)
     get_recent_transactions(transactions)
-
 def get_calculations_summary(values):
     summary = []
     for portfolio_name in values.columns:
@@ -116,7 +115,7 @@ def get_recent_transactions(transactions):
     recent.columns = recent.columns.str.replace('_', ' ').str.title()
     recent['Date'] = recent['Date'].dt.date
     recent['Action'] = recent['Action'].str.title()
-    with st.expander("Recent Rebalancing Trades"):
+    with st.expander("Recent Transactions"):
         st.dataframe(recent, hide_index=True)   
 
 start_app()
