@@ -16,7 +16,7 @@ def get_data():
     get_portfolio_returns()
     get_benchmark_returns()
     conn = sqlite3.connect("portfolio.db")
-    values = pd.read_sql("SELECT * FROM portfolio_values ", conn)
+    values = pd.read_sql("SELECT * FROM portfolio_values", conn)
     values['date'] = pd.to_datetime(values['date'])
     transactions = pd.read_sql("SELECT * FROM transactions", conn)
     transactions['date'] = pd.to_datetime(transactions['date'])
@@ -28,7 +28,8 @@ def start_app():
     summary_df = get_calculations_summary(values)
     st.set_page_config(page_title="Portfolio Backtest Dashboard", layout="wide")
     st.title("Portfolio Backtester")
-    portfolio_list = values.columns.tolist()    
+    portfolio_list = values.columns.tolist() 
+    portfolio_list.append(portfolio_list.pop(portfolio_list.index('SPY Benchmark')))
     selected_portfolios = st.multiselect("Select portfolios to analyze:", portfolio_list, default=portfolio_list)
     tab1, tab2, tab3, tab4, tab5= st.tabs(["Overview", "Risk vs. Return", "Annual Returns", "Drawdowns", "Rolling Sharpe"])
     with tab1: 
@@ -71,7 +72,7 @@ def get_calculations_summary(values):
             "Sharpe": sharpe,
             "Max Drawdown": max_dd
         })
-    summary_df = pd.DataFrame(summary)
+    summary_df = pd.DataFrame(summary).sort_values(["CAGR"])
     summary_df['CAGR'] = summary_df['CAGR'].map("{:.2%}".format)
     summary_df['Volatility'] = summary_df['Volatility'].map("{:.2%}".format)
     summary_df['Max Drawdown'] = summary_df['Max Drawdown'].map("{:.2%}".format)
@@ -85,9 +86,9 @@ def get_summary_chart(selected_portfolios, summary_df):
     filtered_df['Volatility'] = pd.to_numeric(filtered_df['Volatility'].str.replace('%', '', regex=False))  
     filtered_df['Max Drawdown'] = pd.to_numeric(filtered_df['Max Drawdown'].str.replace('%', '', regex=False))  
     styled_df = filtered_df.style.background_gradient(
-        subset=['Max Drawdown', 'CAGR', 'Sharpe'], cmap='GnBu', low=0.95, high=0.95
+        subset=['Max Drawdown', 'CAGR', 'Sharpe'], cmap='GnBu', low=0.9, high=0.9
     ).background_gradient(
-        subset=['Volatility'], cmap='GnBu_r', low=.95, high=.95
+        subset=['Volatility'], cmap='GnBu_r', low=.9, high=.9
     ).format(
         "{:.2f}%", subset=['CAGR', 'Volatility', 'Max Drawdown']
     )
@@ -132,7 +133,7 @@ def get_annual_returns_chart(selected_portfolios, values):
     annual_returns_df.index.name = 'Portfolio'
     mask = annual_returns_df.index.isin(selected_portfolios)
     filtered_df = annual_returns_df[mask]
-    styled_table = filtered_df.style.background_gradient(cmap='GnBu', low=.9, high=.9, axis=0)
+    styled_table = filtered_df.style.background_gradient(cmap='GnBu', low=.9, high=.9)
     st.dataframe(styled_table, use_container_width=True)
 
 def get_drawdowns_chart(selected_portfolios, values):
