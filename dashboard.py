@@ -27,10 +27,10 @@ def start_app():
     values = values.pivot(index='date', columns='portfolio_name', values='portfolio_value')
     summary_df = get_calculations_summary(values)
     st.set_page_config(page_title="Portfolio Backtest Dashboard", layout="wide")
-    st.title("📊 Portfolio Backtester")
+    st.title("Portfolio Backtester")
     portfolio_list = values.columns.tolist()    
     selected_portfolios = st.multiselect("Select portfolios to analyze:", portfolio_list, default=portfolio_list)
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Overview", "Annual Returns", "Risk vs. Return", "Drawdowns", "Returns", "Rolling Metrics"])
+    tab1, tab2, tab3, tab4, tab5= st.tabs(["Overview", "Annual Returns", "Drawdowns", "Risk vs. Return", "Rolling Metrics"])
     with tab1: 
         st.subheader("Portfolio Performance Summary")
         get_summary_chart(selected_portfolios, summary_df)
@@ -38,12 +38,10 @@ def start_app():
     with tab2:
         get_annual_returns_chart(selected_portfolios, values)
     with tab3:
-        get_risk_returns_chart(selected_portfolios, summary_df)
-    with tab4:
         get_drawdowns_chart(selected_portfolios, values)
+    with tab4:
+        get_risk_returns_chart(selected_portfolios, summary_df)
     with tab5:
-        get_monthly_returns_chart(selected_portfolios, values)
-    with tab6:
         get_rolling_charts(selected_portfolios, values)
     get_recent_transactions(transactions)
 
@@ -118,6 +116,13 @@ def get_annual_returns_chart(selected_portfolios, values):
     styled_table = filtered_df.style.background_gradient(cmap='GnBu', low=.9, high=.9, axis=0)
     st.dataframe(styled_table, use_container_width=True)
 
+def get_drawdowns_chart(selected_portfolios, values):
+    st.subheader("Portfolio Drawdowns Over Time")
+    drawdowns = (values[selected_portfolios].cummax() - values[selected_portfolios]) / values[selected_portfolios].cummax()
+    fig_dd = px.line(drawdowns, x=drawdowns.index, y=drawdowns.columns)
+    fig_dd.update_layout(yaxis_title="Drawdown", xaxis_title="Date", template="plotly_white")
+    st.plotly_chart(fig_dd, use_container_width=True)
+
 def get_risk_returns_chart(selected_portfolios, summary_df):
     st.subheader("Portfolio Risk vs. Return")
     fig_rr = go.Figure()
@@ -127,7 +132,7 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
     for col in selected_portfolios:
         cagr_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'CAGR'].values[0]
         vol_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Volatility'].values[0]
-        fig_rr.add_trace(go.Scatter(x=[vol_value], y=[cagr_value], mode='markers', name=col, marker=dict(size=14)))
+        fig_rr.add_trace(go.Scatter(x=[vol_value], y=[cagr_value], mode='markers', name=col, marker=dict(size=16)))
     fig_rr.update_layout(
         xaxis_title='Volatility (%)',
         yaxis_title='CAGR (%)',
@@ -136,22 +141,6 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
         yaxis=dict(type='linear', title='CAGR (%)')
     )
     st.plotly_chart(fig_rr, use_container_width=True)
-
-def get_drawdowns_chart(selected_portfolios, values):
-    st.subheader("Portfolio Drawdowns Over Time")
-    drawdowns = (values[selected_portfolios].cummax() - values[selected_portfolios]) / values[selected_portfolios].cummax()
-    fig_dd = px.line(drawdowns, x=drawdowns.index, y=drawdowns.columns)
-    fig_dd.update_layout(yaxis_title="Drawdown", xaxis_title="Date", template="plotly_white")
-    st.plotly_chart(fig_dd, use_container_width=True)
-
-def get_monthly_returns_chart(selected_portfolios, values):
-    st.subheader("Monthly Returns Distribution")
-    monthly_returns = values[selected_portfolios].resample('M').last().pct_change().dropna()
-    fig_hist = go.Figure()
-    for col in monthly_returns.columns:
-        fig_hist.add_trace(go.Histogram(x=monthly_returns[col], name=col, opacity=0.6, nbinsx=50))
-    fig_hist.update_layout(barmode='overlay', xaxis_title="Return", yaxis_title="Frequency", template="plotly_white")
-    st.plotly_chart(fig_hist, use_container_width=True)
 
 def get_rolling_charts(selected_portfolios, values):
     st.subheader("Rolling Sharpe Ratio & Volatility")
