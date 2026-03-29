@@ -2,7 +2,7 @@
 <table>
   <tr>
     <td>
-    A portfolio backtesting engine built with Python, SQLite data storage, and a Streamlit dashboard that simulates investment strategies, tracks transactions, and visualizes portfolio performance. The project evaluates different portfolio allocations and compares them to a benchmark using performance metrics such as CAGR, volatility, Sharpe ratio, and maximum drawdown.
+    A portfolio backtesting engine built with Python, SQLite data storage, and a Streamlit dashboard that simulates investment strategies and visualizes portfolio performance over time. The project evaluates portfolios against an S&P 500 benchmark using key risk and return metrics, including CAGR, volatility, Sharpe ratio, and maximum drawdown.
     </td>
   </tr>
 </table> 
@@ -20,12 +20,11 @@
 - Yfinance
 
 ### Features
-- Simulate multiple portfolio strategies with rebalancing and transaction tracking
-- Store and query portfolio values and transactions in SQLite
-- Calculate key performance metrics: CAGR, volatility, Sharpe ratio, and maximum drawdown
-- Compare strategies against a benchmark (S&P 500)
-- Interactive Streamlit dashboard for performance analysis
-- Data visualization and charts with Plotly
+- Simulate and compare multiple portfolio strategies against an S&P 500 benchmark
+- Store and query portfolio data using SQLite
+- Compute key performance metrics: CAGR, volatility, Sharpe ratio, and maximum drawdown
+- Interactive Streamlit dashboard for analyzing risk, return, and consistency across portfolios
+- Plotly charts to visualize growth over time, drawdowns, rolling Sharpe, and risk-return comparisons
 
 ### Setup 
    ```sh
