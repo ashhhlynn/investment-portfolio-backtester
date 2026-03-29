@@ -86,9 +86,9 @@ def get_summary_chart(selected_portfolios, summary_df):
     .format("{:.2f}%", subset=['CAGR', 'Volatility', 'Max Drawdown'])\
     
     st.dataframe(styled_df, use_container_width=True, hide_index=True, column_config={
-        "CAGR": {"alignment": "left"}, 
-        "Volatility": {"alignment": "left"},    
-        "Max Drawdown": {"alignment": "left"}    
+        "CAGR": st.column_config.NumberColumn(alignment="left"),
+        "Volatility": st.column_config.NumberColumn(alignment="left"),
+        "Max Drawdown": st.column_config.NumberColumn(alignment="left"), 
     })
 
 def get_values_chart(selected_portfolios, values):
