@@ -79,17 +79,27 @@ def get_summary_chart(selected_portfolios, summary_df):
     filtered_df['CAGR'] = pd.to_numeric(filtered_df['CAGR'].str.replace('%', '', regex=False))
     filtered_df['Volatility'] = pd.to_numeric(filtered_df['Volatility'].str.replace('%', '', regex=False))  
     filtered_df['Max Drawdown'] = pd.to_numeric(filtered_df['Max Drawdown'].str.replace('%', '', regex=False))  
-    styled_df = filtered_df.style\
-    .background_gradient(subset=['CAGR', 'Sharpe'], cmap='GnBu', low=.9, high=.9)\
-    .background_gradient(subset=['Volatility'], cmap='GnBu_r', low=.9, high=.9)\
-    .background_gradient(subset=['Max Drawdown'], cmap='GnBu', low=.9, high=.9)\
-    .format("{:.2f}%", subset=['CAGR', 'Volatility', 'Max Drawdown'])\
+
+    
+    styled_df = filtered_df.style.background_gradient(
+    subset=['Max Drawdown', 'CAGR', 'Sharpe'], 
+    cmap='GnBu', 
+    low=0.9,
+    high=.9
+    ).background_gradient(
+    subset=['Volatility'], cmap='GnBu_r', low=.9, high=.9
+    ).format(
+    "{:.2f}%", 
+    subset=['CAGR', 'Volatility', 'Max Drawdown']
+    )
     
     st.dataframe(styled_df, use_container_width=True, hide_index=True, column_config={
-        "CAGR": st.column_config.NumberColumn(alignment="left"),
-        "Volatility": st.column_config.NumberColumn(alignment="left"),
-        "Max Drawdown": st.column_config.NumberColumn(alignment="left"), 
+        "CAGR": {"alignment": "left"}, 
+        "Volatility": {"alignment": "left"},    
+        "Max Drawdown": {"alignment": "left"}  
     })
+
+    
 
 def get_values_chart(selected_portfolios, values):
     st.subheader("Portfolio Value Over Time")
