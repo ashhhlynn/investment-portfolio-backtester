@@ -2,7 +2,8 @@
 <table>
   <tr>
     <td>
-    A portfolio backtesting engine built with Python, SQLite data storage, and a Streamlit dashboard that simulates investment strategies and visualizes portfolio performance over time. The project evaluates portfolios against an S&P 500 benchmark using key risk and return metrics, including CAGR, volatility, Sharpe ratio, and maximum drawdown.
+    A portfolio backtesting engine built with Python, SQLite data storage, and a Streamlit dashboard to simulate factor-based investment strategies. The project evaluates portfolios against an S&P 500 benchmark using performance metrics such as CAGR, volatility, Sharpe ratio, and maximum drawdown, with interactive visualizations for analyzing risk, return, and consistency over time.
+
     </td>
   </tr>
 </table> 

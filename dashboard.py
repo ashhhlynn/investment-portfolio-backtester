@@ -37,16 +37,16 @@ def start_app():
         st.subheader("Portfolio Value Over Time")
         get_values_chart(selected_portfolios, values)
     with tab2:
-        st.subheader("Portfolio Risk vs. Return")
+        st.subheader("Risk vs. Return")
         get_risk_returns_chart(selected_portfolios, summary_df)
     with tab3:
-        st.subheader("Portfolio Annual Returns")
+        st.subheader("Annual Returns")
         get_annual_returns_chart(selected_portfolios, values)
     with tab4:
-        st.subheader("Portfolio Drawdowns Over Time")    
+        st.subheader("Drawdowns Over Time")    
         get_drawdowns_chart(selected_portfolios, values)
     with tab5:
-        st.subheader("Portfolio Rolling Sharpe Ratio")
+        st.subheader("Rolling Sharpe Ratio")
         get_rolling_charts(selected_portfolios, values)
     get_recent_transactions(transactions)
 
@@ -114,7 +114,7 @@ def get_values_chart(selected_portfolios, values):
                 y=values[col], 
                 mode='lines', 
                 name=col, 
-                line=dict(color='navy')
+                line=dict(color='black')
             ))
         else:
             fig_value.add_trace(go.Scattergl(
@@ -150,7 +150,7 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
                 name=col, 
                 textposition="bottom left", 
                 text=col, 
-                marker=dict(color='navy', size=(sharpe_value**2)*50),
+                marker=dict(color='black', size=(sharpe_value**2)*50),
                 hovertemplate=
                 f"{col}<br>" +
                 "CAGR: %{y:.2f}%<br>" +
@@ -213,7 +213,7 @@ def get_drawdowns_chart(selected_portfolios, values):
                 y=drawdowns[col], 
                 mode='lines', 
                 name=col, 
-                line=dict(color='navy')
+                line=dict(color='black')
             ))
         else:
             fig_dd.add_trace(trace_type(
@@ -248,7 +248,7 @@ def get_rolling_charts(selected_portfolios, values):
                 y=rolling_sharpe, 
                 mode='lines', 
                 name=col, 
-                line=dict(color='navy')
+                line=dict(color='black')
             ))
         else:
             fig_rm.add_trace(go.Scattergl(
