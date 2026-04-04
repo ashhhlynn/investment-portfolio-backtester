@@ -102,7 +102,7 @@ def get_summary_chart(selected_portfolios, summary_df):
         styled_df, 
         use_container_width=True, 
         hide_index=True, 
-        column_config={"Sharpe":  {"alignment": "right"}}
+        column_config={"Sharpe": {"alignment": "right"}}
     )   
 
 def get_values_chart(selected_portfolios, values):
@@ -124,11 +124,11 @@ def get_values_chart(selected_portfolios, values):
                 name=col
             ))
     fig_value.update_layout(
+        yaxis_title="Portfolio Value ($)", 
+        xaxis_title="Date", 
         legend_title="Portfolio", 
         hovermode="x unified", 
         xaxis_rangeslider_visible=False, 
-        yaxis_title="Portfolio Value ($)", 
-        xaxis_title="Date", 
         template="plotly_white"
     )
     st.plotly_chart(fig_value, use_container_width=True)
@@ -146,12 +146,11 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
             fig_rr.add_trace(go.Scatter(
                 x=[vol_value], 
                 y=[cagr_value], 
-                textposition="bottom left", 
-                text=col, 
                 mode='markers+text', 
                 name=col, 
-                marker=dict(color='navy', 
-                size=(sharpe_value**2)*50),
+                textposition="bottom left", 
+                text=col, 
+                marker=dict(color='navy', size=(sharpe_value**2)*50),
                 hovertemplate=
                 f"{col}<br>" +
                 "CAGR: %{y:.2f}%<br>" +
@@ -163,10 +162,10 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
             fig_rr.add_trace(go.Scatter(
                 x=[vol_value], 
                 y=[cagr_value], 
-                textposition="bottom left", 
-                text=col,
                 mode='markers+text', 
                 name=col, 
+                textposition="bottom left", 
+                text=col,
                 marker=dict(size=(sharpe_value**2)*50),
                 hovertemplate=
                 f"{col}<br>" +
@@ -176,10 +175,10 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
                 "<extra></extra>"
             ))
     fig_rr.update_layout(
-        template='plotly_white',
-        xaxis=dict( title='Volatility (%)'),
+        xaxis=dict(title='Volatility (%)'),
         yaxis=dict(title='CAGR (%)'),
-        showlegend=False
+        showlegend=False,
+        template='plotly_white'
     )
     fig_rr.update_yaxes(scaleanchor="x", scaleratio=1) 
     st.plotly_chart(fig_rr, use_container_width=True)
@@ -194,7 +193,12 @@ def get_annual_returns_chart(selected_portfolios, values):
     annual_returns_df.index.name = 'Portfolio'
     mask = annual_returns_df.index.isin(selected_portfolios)
     filtered_df = annual_returns_df[mask]
-    styled_table = filtered_df.style.background_gradient(cmap='GnBu', vmin=-.20, vmax=0.60, low=.2).format("{:.2%}")
+    styled_table = filtered_df.style.background_gradient(
+        cmap='GnBu', 
+        vmin=-.20, 
+        vmax=0.60, 
+        low=.2
+    ).format("{:.2%}")
     st.dataframe(styled_table, use_container_width=True)
 
 def get_drawdowns_chart(selected_portfolios, values):
@@ -218,15 +222,15 @@ def get_drawdowns_chart(selected_portfolios, values):
                 name=col
             ))
     fig_dd.update_layout(
-        legend_title="Portfolio",
         xaxis_title="Date",
         yaxis_title="Drawdown (%)",
-        template="plotly_white",
+        legend_title="Portfolio",
         hovermode="x unified",
-        xaxis_rangeslider_visible=False
+        xaxis_rangeslider_visible=False,
+        template="plotly_white"
     )
     fig_dd.update_yaxes(
-        tickformat=".0%",     
+        tickformat=".2%",     
         range=[None, 0]    
     )
     st.plotly_chart(fig_dd, use_container_width=True)
@@ -250,15 +254,21 @@ def get_rolling_charts(selected_portfolios, values):
                 x=rolling_sharpe.index, 
                 y=rolling_sharpe, 
                 mode='lines', 
-                name=col))
+                name=col
+            ))
     fig_rm.add_hline(y=0, line_dash="dot", opacity=0.6)
     fig_rm.add_hline(y=1, line_dash="dot", opacity=0.6)
     fig_rm.update_layout(
         yaxis_title="Sharpe Ratio", 
-        hovermode="x unified", 
         xaxis_title="Date", 
-        template="plotly_white", 
-        legend_title="Portfolio")
+        legend_title="Portfolio",
+        hovermode="x unified", 
+        xaxis_rangeslider_visible=False,
+        template="plotly_white"
+    ) 
+    fig_rm.update_yaxes(
+        tickformat=".2f"
+    )
     st.plotly_chart(fig_rm, use_container_width=True)
 
 def get_recent_transactions(transactions):
