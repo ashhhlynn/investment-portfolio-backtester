@@ -71,7 +71,7 @@ def get_calculations_summary(values):
             "Sharpe": sharpe,
             "Max Drawdown": max_dd
         })
-    summary_df = pd.DataFrame(summary).sort_values(["CAGR"])
+    summary_df = pd.DataFrame(summary).sort_values(["Sharpe"])
     summary_df['CAGR'] = summary_df['CAGR'].map("{:.2%}".format)
     summary_df['Volatility'] = summary_df['Volatility'].map("{:.2%}".format)
     summary_df['Max Drawdown'] = summary_df['Max Drawdown'].map("{:.2%}".format)
@@ -141,7 +141,7 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
     for col in selected_portfolios:
         cagr_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'CAGR'].values[0]
         vol_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Volatility'].values[0]
-        sharpe_value = (float(summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Sharpe'].values[0]))
+        sharpe_value = float(summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Sharpe'].values[0])
         if "Benchmark" in col:
             fig_rr.add_trace(go.Scatter(
                 x=[vol_value], 
@@ -178,6 +178,7 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
         xaxis=dict(title='Volatility (%)'),
         yaxis=dict(title='CAGR (%)'),
         showlegend=False,
+        xaxis_rangeslider_visible=False, 
         template='plotly_white'
     )
     fig_rr.update_yaxes(scaleanchor="x", scaleratio=1) 
@@ -192,7 +193,7 @@ def get_annual_returns_chart(selected_portfolios, values):
     annual_returns_df.columns = pd.to_datetime(annual_returns_df.columns).year
     annual_returns_df.index.name = 'Portfolio'
     mask = annual_returns_df.index.isin(selected_portfolios)
-    filtered_df = annual_returns_df[mask]
+    filtered_df = annual_returns_df[mask].sort_values(by=2021)
     styled_table = filtered_df.style.background_gradient(
         cmap='GnBu', 
         vmin=-.20, 
