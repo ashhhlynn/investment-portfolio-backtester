@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 import numpy as np
-import plotly.express as px
 import plotly.graph_objects as go
 from portfolio_backtester import (
     create_database_tables,
@@ -86,24 +85,52 @@ def get_summary_chart(selected_portfolios, summary_df):
     filtered_df['Volatility'] = pd.to_numeric(filtered_df['Volatility'].str.replace('%', '', regex=False))  
     filtered_df['Max Drawdown'] = pd.to_numeric(filtered_df['Max Drawdown'].str.replace('%', '', regex=False))  
     styled_df = filtered_df.style.background_gradient(
-        subset=['Max Drawdown', 'CAGR', 'Sharpe'], cmap='GnBu', low=.9, high=.9
+        subset=['Max Drawdown', 'CAGR', 'Sharpe'], 
+        cmap='GnBu', 
+        low=-.6, 
+        high=.2
     ).background_gradient(
-        subset=['Volatility'], cmap='GnBu_r', low=.9, high=.9
+        subset=['Volatility'], 
+        cmap='GnBu_r', 
+        low=.5, 
+        high=.1
     ).format(
-        "{:.2f}%", subset=['CAGR', 'Volatility', 'Max Drawdown']
+        "{:.2f}%", 
+        subset=['CAGR', 'Volatility', 'Max Drawdown']
     )
-    st.dataframe(styled_df, use_container_width=True, hide_index=True, column_config={
-        "Sharpe":  {"alignment": "right"}
-    })   
+    st.dataframe(
+        styled_df, 
+        use_container_width=True, 
+        hide_index=True, 
+        column_config={"Sharpe":  {"alignment": "right"}}
+    )   
 
 def get_values_chart(selected_portfolios, values):
     fig_value = go.Figure()
     for col in selected_portfolios:
         if "Benchmark" in col:
-            fig_value.add_trace(go.Scattergl(x=values.index, y=values[col], mode='lines', name=col, line=dict(color='navy')))
+            fig_value.add_trace(go.Scattergl(
+                x=values.index, 
+                y=values[col], 
+                mode='lines', 
+                name=col, 
+                line=dict(color='navy')
+            ))
         else:
-            fig_value.add_trace(go.Scattergl(x=values.index, y=values[col], mode='lines', name=col))
-    fig_value.update_layout(legend_title="Portfolio", hovermode="x unified" , xaxis_rangeslider_visible=False, yaxis_title="Portfolio Value ($)", xaxis_title="Date", template="plotly_white")
+            fig_value.add_trace(go.Scattergl(
+                x=values.index, 
+                y=values[col], 
+                mode='lines', 
+                name=col
+            ))
+    fig_value.update_layout(
+        legend_title="Portfolio", 
+        hovermode="x unified", 
+        xaxis_rangeslider_visible=False, 
+        yaxis_title="Portfolio Value ($)", 
+        xaxis_title="Date", 
+        template="plotly_white"
+    )
     st.plotly_chart(fig_value, use_container_width=True)
 
 def get_risk_returns_chart(selected_portfolios, summary_df):
@@ -114,11 +141,40 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
     for col in selected_portfolios:
         cagr_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'CAGR'].values[0]
         vol_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Volatility'].values[0]
+        sharpe_value = (float(summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Sharpe'].values[0]))
         if "Benchmark" in col:
-            fig_rr.add_trace(go.Scatter(x=[vol_value], y=[cagr_value], textposition="bottom left", text=col, mode='markers+text', name=col, marker=dict(color='navy', size=24)))
-
+            fig_rr.add_trace(go.Scatter(
+                x=[vol_value], 
+                y=[cagr_value], 
+                textposition="bottom left", 
+                text=col, 
+                mode='markers+text', 
+                name=col, 
+                marker=dict(color='navy', 
+                size=(sharpe_value**2)*50),
+                hovertemplate=
+                f"{col}<br>" +
+                "CAGR: %{y:.2f}%<br>" +
+                "Volatility: %{x:.2f}%<br>" +
+                f"Sharpe: {sharpe_value:.2f}" +
+                "<extra></extra>"
+            ))
         else:
-            fig_rr.add_trace(go.Scatter(x=[vol_value], y=[cagr_value], textposition="bottom left", text=col, mode='markers+text', name=col, marker=dict(size=24)))
+            fig_rr.add_trace(go.Scatter(
+                x=[vol_value], 
+                y=[cagr_value], 
+                textposition="bottom left", 
+                text=col,
+                mode='markers+text', 
+                name=col, 
+                marker=dict(size=(sharpe_value**2)*50),
+                hovertemplate=
+                f"{col}<br>" +
+                "CAGR: %{y:.2f}%<br>" +
+                "Volatility: %{x:.2f}%<br>" +
+                f"Sharpe: {sharpe_value:.2f}" +
+                "<extra></extra>"
+            ))
     fig_rr.update_layout(
         template='plotly_white',
         xaxis=dict( title='Volatility (%)'),
@@ -138,7 +194,7 @@ def get_annual_returns_chart(selected_portfolios, values):
     annual_returns_df.index.name = 'Portfolio'
     mask = annual_returns_df.index.isin(selected_portfolios)
     filtered_df = annual_returns_df[mask]
-    styled_table = filtered_df.style.background_gradient(cmap='GnBu', low=.9, high=.9)
+    styled_table = filtered_df.style.background_gradient(cmap='GnBu', vmin=-.20, vmax=0.60, low=.2).format("{:.2%}")
     st.dataframe(styled_table, use_container_width=True)
 
 def get_drawdowns_chart(selected_portfolios, values):
@@ -182,12 +238,27 @@ def get_rolling_charts(selected_portfolios, values):
         daily_returns = values[col].pct_change().dropna()
         rolling_sharpe = (daily_returns.rolling(window).mean() / daily_returns.rolling(window).std()) * np.sqrt(252)
         if "Benchmark" in col:
-            fig_rm.add_trace(go.Scattergl(x=rolling_sharpe.index, y=rolling_sharpe, mode='lines', name=col, line=dict(color='navy')))
+            fig_rm.add_trace(go.Scattergl(
+                x=rolling_sharpe.index, 
+                y=rolling_sharpe, 
+                mode='lines', 
+                name=col, 
+                line=dict(color='navy')
+            ))
         else:
-            fig_rm.add_trace(go.Scattergl(x=rolling_sharpe.index, y=rolling_sharpe, mode='lines', name=col))
+            fig_rm.add_trace(go.Scattergl(
+                x=rolling_sharpe.index, 
+                y=rolling_sharpe, 
+                mode='lines', 
+                name=col))
     fig_rm.add_hline(y=0, line_dash="dot", opacity=0.6)
     fig_rm.add_hline(y=1, line_dash="dot", opacity=0.6)
-    fig_rm.update_layout(yaxis_title="Sharpe Ratio", hovermode="x unified", xaxis_title="Date", template="plotly_white", legend_title="Portfolio")
+    fig_rm.update_layout(
+        yaxis_title="Sharpe Ratio", 
+        hovermode="x unified", 
+        xaxis_title="Date", 
+        template="plotly_white", 
+        legend_title="Portfolio")
     st.plotly_chart(fig_rm, use_container_width=True)
 
 def get_recent_transactions(transactions):
