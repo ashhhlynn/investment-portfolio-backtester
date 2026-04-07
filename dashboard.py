@@ -37,7 +37,9 @@ def start_app():
     portfolio_list = values.columns.tolist() 
     portfolio_list.append(portfolio_list.pop(portfolio_list.index('SPY Benchmark')))
     selected_portfolios = st.multiselect("Select portfolios to analyze:", portfolio_list, default=portfolio_list)
-    tab1, tab2, tab3, tab4, tab5= st.tabs(["Overview", "Risk vs. Return", "Annual Returns", "Drawdowns", "Rolling Sharpe"])
+    tab1, tab2, tab3, tab4, tab5= st.tabs([
+        "Overview", "Risk vs. Return", "Annual Returns", "Drawdowns", "Rolling Sharpe"
+    ])
     with tab1: 
         st.subheader("Portfolio Performance Summary")
         get_summary_chart(selected_portfolios, summary_df)
@@ -79,19 +81,13 @@ def get_calculations_summary(values):
             "Max Drawdown": max_dd
         })
     summary_df = pd.DataFrame(summary).sort_values(["Sharpe"])
-    summary_df['CAGR'] = summary_df['CAGR'].map("{:.2%}".format)
-    summary_df['Volatility'] = summary_df['Volatility'].map("{:.2%}".format)
-    summary_df['Max Drawdown'] = summary_df['Max Drawdown'].map("{:.2%}".format)
-    summary_df['Sharpe'] = summary_df['Sharpe'].map("{:.2f}".format)
     return summary_df
 
 def get_summary_chart(selected_portfolios, summary_df):
     mask = summary_df['Portfolio'].isin(selected_portfolios)
     filtered_df = summary_df[mask]
-    filtered_df['CAGR'] = pd.to_numeric(filtered_df['CAGR'].str.replace('%', '', regex=False))
-    filtered_df['Volatility'] = pd.to_numeric(filtered_df['Volatility'].str.replace('%', '', regex=False))  
-    filtered_df['Max Drawdown'] = pd.to_numeric(filtered_df['Max Drawdown'].str.replace('%', '', regex=False))  
-    styled_df = filtered_df.style.set_properties(**{'background-color': "#fbfcfd"}
+    styled_df = filtered_df.style.set_properties(
+        **{'background-color': "#fbfcfd"}
     ).format(
         "{:.2f}%", 
         subset=['CAGR', 'Volatility', 'Max Drawdown']
@@ -100,8 +96,8 @@ def get_summary_chart(selected_portfolios, summary_df):
         styled_df, 
         use_container_width=True, 
         hide_index=True, 
-        column_config={
-            "Sharpe": {"alignment": "right", "width": 90},
+        column_config = {
+            "Sharpe": {"width": 90},
             "CAGR": {"width": 90},
             "Portfolio": {"width": 90},
             "Volatility": {"width": 90},
@@ -112,55 +108,54 @@ def get_summary_chart(selected_portfolios, summary_df):
 def get_values_chart(selected_portfolios, values):
     fig_value = go.Figure()
     for col in selected_portfolios:
-        fig_value.add_trace(go.Scattergl(
-            x=values.index, 
-            y=values[col], 
-            mode='lines', 
-            name=col,
-            line=dict(color=chart_colors[col])
-        ))
+        fig_value.add_trace(
+            go.Scattergl(
+                x=values.index, 
+                y=values[col], 
+                mode='lines', 
+                name=col,
+                line=dict(color=chart_colors[col])
+            )
+        )
     fig_value.update_layout(
         yaxis_title="Portfolio Value ($)", 
         xaxis_title="Date", 
         legend_title="Portfolio", 
         hovermode="x unified", 
-        xaxis_rangeslider_visible=False, 
         template="plotly_white"
     )
     st.plotly_chart(fig_value, use_container_width=True)
 
 def get_risk_returns_chart(selected_portfolios, summary_df):
     fig_rr = go.Figure()
-    summary_df_copy = summary_df.copy()
-    summary_df_copy['CAGR'] = pd.to_numeric(summary_df_copy['CAGR'].str.replace('%', '', regex=False))
-    summary_df_copy['Volatility'] = pd.to_numeric(summary_df_copy['Volatility'].str.replace('%', '', regex=False))        
+    summary_df_copy = summary_df.copy()        
     for col in selected_portfolios:
         cagr_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'CAGR'].values[0]
         vol_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Volatility'].values[0]
         sharpe_value = float(summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Sharpe'].values[0])
-        fig_rr.add_trace(go.Scatter(
-            x=[vol_value], 
-            y=[cagr_value], 
-            mode='markers+text', 
-            name=col, 
-            textposition="bottom left", 
-            text=col,
-            marker=dict(color=chart_colors[col], size=(sharpe_value**2)*50),
-            hovertemplate=
-            f"{col}<br>" +
-            "CAGR: %{y:.2f}%<br>" +
-            "Volatility: %{x:.2f}%<br>" +
-            f"Sharpe: {sharpe_value:.2f}" +
-            "<extra></extra>"
-            ))
+        fig_rr.add_trace(
+            go.Scatter(
+                x=[vol_value], 
+                y=[cagr_value], 
+                mode='markers+text', 
+                name=col, 
+                textposition="bottom left", 
+                text=col,
+                marker=dict(color=chart_colors[col], size=(sharpe_value**2)*50),
+                hovertemplate=
+                f"{col}<br>" +
+                "CAGR: %{y:.2f}%<br>" +
+                "Volatility: %{x:.2f}%<br>" +
+                f"Sharpe: {sharpe_value:.2f}" +
+                "<extra></extra>"
+            )
+        )
     fig_rr.update_layout(
         xaxis=dict(title='Volatility (%)'),
-        yaxis=dict(title='CAGR (%)'),
+        yaxis=dict(title='CAGR (%)', scaleanchor="x", scaleratio=1),
         showlegend=False,
-        xaxis_rangeslider_visible=False, 
         template='plotly_white'
     )
-    fig_rr.update_yaxes(scaleanchor="x", scaleratio=1) 
     st.plotly_chart(fig_rr, use_container_width=True)
 
 def get_annual_returns_chart(selected_portfolios, values):
@@ -186,25 +181,21 @@ def get_drawdowns_chart(selected_portfolios, values):
     drawdowns = values[selected_portfolios] / values[selected_portfolios].cummax() - 1    
     fig_dd = go.Figure()
     for col in selected_portfolios:
-        trace_type = go.Scatter         
-        fig_dd.add_trace(trace_type(
-            x=drawdowns.index, 
-            y=drawdowns[col], 
-            mode='lines', 
-            name=col, 
-            line=dict(color=chart_colors[col])
-        ))
+        fig_dd.add_trace(
+            go.Scatter(
+                x=drawdowns.index, 
+                y=drawdowns[col], 
+                mode='lines', 
+                name=col, 
+                line=dict(color=chart_colors[col])
+            )
+        )
     fig_dd.update_layout(
         xaxis_title="Date",
-        yaxis_title="Drawdown (%)",
+        yaxis=dict(title='Drawdown (%)', tickformat=".2%", range=[None, 0]),
         legend_title="Portfolio",
         hovermode="x unified",
-        xaxis_rangeslider_visible=False,
         template="plotly_white"
-    )
-    fig_dd.update_yaxes(
-        tickformat=".2%",     
-        range=[None, 0]    
     )
     st.plotly_chart(fig_dd, use_container_width=True)
 
@@ -214,26 +205,24 @@ def get_rolling_charts(selected_portfolios, values):
     for col in selected_portfolios:
         daily_returns = values[col].pct_change().dropna()
         rolling_sharpe = (daily_returns.rolling(window).mean() / daily_returns.rolling(window).std()) * np.sqrt(252)
-        fig_rm.add_trace(go.Scattergl(
-            x=rolling_sharpe.index, 
-            y=rolling_sharpe, 
-            mode='lines', 
-            name=col, 
-            line=dict(color=chart_colors[col])
-        ))
-    fig_rm.add_hline(y=0, line_dash="dot", opacity=0.6)
-    fig_rm.add_hline(y=1, line_dash="dot", opacity=0.6)
+        fig_rm.add_trace(
+            go.Scattergl(
+                x=rolling_sharpe.index, 
+                y=rolling_sharpe, 
+                mode='lines', 
+                name=col, 
+                line=dict(color=chart_colors[col])
+            )
+        )
+    fig_rm.add_hline(y=0, line_dash="dot", opacity=0.5)
+    fig_rm.add_hline(y=1, line_dash="dot", opacity=0.5)
     fig_rm.update_layout(
-        yaxis_title="Sharpe Ratio", 
+        yaxis=dict(title="Sharpe Ratio", tickformat=".2f"),
         xaxis_title="Date", 
         legend_title="Portfolio",
         hovermode="x unified", 
-        xaxis_rangeslider_visible=False,
         template="plotly_white"
     ) 
-    fig_rm.update_yaxes(
-        tickformat=".2f"
-    )
     st.plotly_chart(fig_rm, use_container_width=True)
 
 def get_recent_transactions(transactions):
