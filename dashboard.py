@@ -11,7 +11,7 @@ from portfolio_backtester import (
 
 chart_colors = {
     'Momentum':"#10CF9B", 
-    'Value':"#388DD7", 
+    'Value':"#50A1E7", 
     'Quality':"#27CCD4",
     'SPY Benchmark': "#133E74"
 }
@@ -37,9 +37,9 @@ def start_app():
     portfolio_list = values.columns.tolist() 
     portfolio_list.append(portfolio_list.pop(portfolio_list.index('SPY Benchmark')))
     selected_portfolios = st.multiselect("Select portfolios to analyze:", portfolio_list, default=portfolio_list)
-    tab1, tab2, tab3, tab4, tab5= st.tabs([
-        "Overview", "Risk vs. Return", "Annual Returns", "Drawdowns", "Rolling Sharpe"
-    ])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+        ["Overview", "Risk vs. Return", "Annual Returns", "Drawdowns", "Rolling Sharpe"]
+    )
     with tab1: 
         st.subheader("Portfolio Performance Summary")
         get_summary_chart(selected_portfolios, summary_df)
@@ -80,7 +80,7 @@ def get_calculations_summary(values):
             "Sharpe": sharpe,
             "Max Drawdown": max_dd
         })
-    summary_df = pd.DataFrame(summary).sort_values(["Sharpe"])
+    summary_df = pd.DataFrame(summary).sort_values(["Sharpe"])    
     return summary_df
 
 def get_summary_chart(selected_portfolios, summary_df):
@@ -89,8 +89,7 @@ def get_summary_chart(selected_portfolios, summary_df):
     styled_df = filtered_df.style.set_properties(
         **{'background-color': "#fbfcfd"}
     ).format(
-        "{:.2%}", 
-        subset=['CAGR', 'Volatility', 'Max Drawdown']
+        "{:.2%}", subset=['CAGR', 'Volatility', 'Max Drawdown']
     ).format(
         "{:.2f}", subset=['Sharpe']
     )
@@ -103,7 +102,7 @@ def get_summary_chart(selected_portfolios, summary_df):
             "CAGR": {"width": 90},
             "Portfolio": {"width": 90},
             "Volatility": {"width": 90},
-            "Max Drawdown": {"width": 90},
+            "Max Drawdown": {"width": 90}
         }
     )   
 
@@ -131,10 +130,13 @@ def get_values_chart(selected_portfolios, values):
 def get_risk_returns_chart(selected_portfolios, summary_df):
     fig_rr = go.Figure()
     summary_df_copy = summary_df.copy()        
+    min_s = summary_df_copy["Sharpe"].min()
+    max_s = summary_df_copy["Sharpe"].max()
     for col in selected_portfolios:
         cagr_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'CAGR'].values[0]
         vol_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Volatility'].values[0]
-        sharpe_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Sharpe'].values[0]
+        sharpe_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Sharpe'].values[0]        
+        scaled_size = 20 + ((sharpe_value - min_s) / (max_s - min_s)) * 16
         fig_rr.add_trace(
             go.Scatter(
                 x=[vol_value], 
@@ -143,9 +145,8 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
                 name=col, 
                 textposition="bottom left", 
                 text=col,
-                marker=dict(color=chart_colors[col], size=(sharpe_value**2)*50),
+                marker=dict(color=chart_colors[col], size=(scaled_size)),
                 hovertemplate=
-                f"{col}<br>" +
                 "CAGR: %{y:.2%}<br>" +
                 "Volatility: %{x:.2%}<br>" +
                 f"Sharpe: {sharpe_value:.2f}" +
@@ -153,7 +154,7 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
             )
         )
     fig_rr.update_layout(
-        xaxis=dict(title='Volatility (%)'),
+        xaxis_title = 'Volatility (%)',
         yaxis=dict(title='CAGR (%)', scaleanchor="x", scaleratio=1),
         showlegend=False,
         template='plotly_white'
@@ -170,12 +171,10 @@ def get_annual_returns_chart(selected_portfolios, values):
     annual_returns_df.index.name = 'Portfolio'
     mask = annual_returns_df.index.isin(selected_portfolios)
     filtered_df = annual_returns_df[mask].sort_values(by=2021)
-    styled_table = filtered_df.style.set_properties(
-        **{'background-color': "#fbfcfd"}
-    ).background_gradient(
+    styled_table = filtered_df.style.background_gradient(
         cmap='YlGnBu', 
         vmin=-.1, 
-        vmax=.4, 
+        vmax=.4 
     ).format(
         "{:.2%}"
     )
@@ -234,7 +233,8 @@ def get_recent_transactions(transactions):
     recent.columns = recent.columns.str.replace('_', ' ').str.title()
     recent['Date'] = recent['Date'].dt.date
     recent['Action'] = recent['Action'].str.title()
+    recent_pd = recent.style.set_properties(**{'background-color': "#fbfcfd"})
     with st.expander("Recent Transactions"):
-        st.dataframe(recent, hide_index=True)   
+        st.dataframe(recent_pd, hide_index=True)   
 
 start_app()
