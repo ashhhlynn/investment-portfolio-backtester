@@ -89,8 +89,10 @@ def get_summary_chart(selected_portfolios, summary_df):
     styled_df = filtered_df.style.set_properties(
         **{'background-color': "#fbfcfd"}
     ).format(
-        "{:.2f}%", 
+        "{:.2%}", 
         subset=['CAGR', 'Volatility', 'Max Drawdown']
+    ).format(
+        "{:.2f}", subset=['Sharpe']
     )
     st.dataframe(
         styled_df, 
@@ -132,7 +134,7 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
     for col in selected_portfolios:
         cagr_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'CAGR'].values[0]
         vol_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Volatility'].values[0]
-        sharpe_value = float(summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Sharpe'].values[0])
+        sharpe_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Sharpe'].values[0]
         fig_rr.add_trace(
             go.Scatter(
                 x=[vol_value], 
@@ -144,8 +146,8 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
                 marker=dict(color=chart_colors[col], size=(sharpe_value**2)*50),
                 hovertemplate=
                 f"{col}<br>" +
-                "CAGR: %{y:.2f}%<br>" +
-                "Volatility: %{x:.2f}%<br>" +
+                "CAGR: %{y:.2%}<br>" +
+                "Volatility: %{x:.2%}<br>" +
                 f"Sharpe: {sharpe_value:.2f}" +
                 "<extra></extra>"
             )
@@ -168,7 +170,9 @@ def get_annual_returns_chart(selected_portfolios, values):
     annual_returns_df.index.name = 'Portfolio'
     mask = annual_returns_df.index.isin(selected_portfolios)
     filtered_df = annual_returns_df[mask].sort_values(by=2021)
-    styled_table = filtered_df.style.background_gradient(
+    styled_table = filtered_df.style.set_properties(
+        **{'background-color': "#fbfcfd"}
+    ).background_gradient(
         cmap='YlGnBu', 
         vmin=-.1, 
         vmax=.4, 
