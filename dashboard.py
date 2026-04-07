@@ -13,7 +13,7 @@ chart_colors = {
     'Momentum':"#10CF9B", 
     'Value':"#388DD7", 
     'Quality':"#27CCD4",
-    'SPY Benchmark': "#093C7A"
+    'SPY Benchmark': "#133E74"
 }
 
 @st.cache_data
@@ -91,16 +91,7 @@ def get_summary_chart(selected_portfolios, summary_df):
     filtered_df['CAGR'] = pd.to_numeric(filtered_df['CAGR'].str.replace('%', '', regex=False))
     filtered_df['Volatility'] = pd.to_numeric(filtered_df['Volatility'].str.replace('%', '', regex=False))  
     filtered_df['Max Drawdown'] = pd.to_numeric(filtered_df['Max Drawdown'].str.replace('%', '', regex=False))  
-    styled_df = filtered_df.style.background_gradient(
-        subset=['Max Drawdown', 'CAGR', 'Sharpe'], 
-        cmap='Blues', 
-        low=.2, 
-        high=.8
-    ).background_gradient(
-        subset=['Volatility'], 
-        cmap='Blues_r', 
-        low=1, 
-        high=.8
+    styled_df = filtered_df.style.set_properties(**{'background-color': "#fbfcfd"}
     ).format(
         "{:.2f}%", 
         subset=['CAGR', 'Volatility', 'Max Drawdown']
@@ -110,11 +101,11 @@ def get_summary_chart(selected_portfolios, summary_df):
         use_container_width=True, 
         hide_index=True, 
         column_config={
-            "Sharpe": {"alignment": "right", "width": 100},
-            "CAGR": {"width": 100},
-            "Portfolio": {"width": 100},
-            "Volatility": {"width": 100},
-            "Max Drawdown": {"width": 100},
+            "Sharpe": {"alignment": "right", "width": 90},
+            "CAGR": {"width": 90},
+            "Portfolio": {"width": 90},
+            "Volatility": {"width": 90},
+            "Max Drawdown": {"width": 90},
         }
     )   
 
@@ -183,18 +174,19 @@ def get_annual_returns_chart(selected_portfolios, values):
     mask = annual_returns_df.index.isin(selected_portfolios)
     filtered_df = annual_returns_df[mask].sort_values(by=2021)
     styled_table = filtered_df.style.background_gradient(
-        cmap='GnBu', 
-        vmin=-.2, 
-        vmax=0.5, 
-        low=.2
-    ).format("{:.2%}")
+        cmap='YlGnBu', 
+        vmin=-.1, 
+        vmax=.4, 
+    ).format(
+        "{:.2%}"
+    )
     st.dataframe(styled_table, use_container_width=True)
 
 def get_drawdowns_chart(selected_portfolios, values):
     drawdowns = values[selected_portfolios] / values[selected_portfolios].cummax() - 1    
     fig_dd = go.Figure()
     for col in selected_portfolios:
-        trace_type = go.Scattergl         
+        trace_type = go.Scatter         
         fig_dd.add_trace(trace_type(
             x=drawdowns.index, 
             y=drawdowns[col], 
