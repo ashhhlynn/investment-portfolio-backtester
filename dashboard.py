@@ -87,10 +87,19 @@ def get_calculations_summary(values):
     summary_df = pd.DataFrame(summary).sort_values(["Sharpe"])    
     return summary_df
 
+def highlight_winners(column):
+    if column.name in ['CAGR', 'Sharpe', 'Max Drawdown']:
+        is_winner = column == column.max()
+    elif column.name in ['Volatility']:
+        is_winner = column == column.min() 
+    else:
+        return [''] * len(column)
+    return ['background-color: white; color: #2475c3; font-weight: bold' if v else '' for v in is_winner]
+
 def get_summary_chart(selected_portfolios, summary_df):
     mask = summary_df['Portfolio'].isin(selected_portfolios)
     filtered_df = summary_df[mask]
-    styled_df = filtered_df.style.format(
+    styled_df = filtered_df.style.apply(highlight_winners).format(
         "{:.2%}", subset=['CAGR', 'Volatility', 'Max Drawdown']
     ).format(
         "{:.2f}", subset=['Sharpe']
@@ -104,8 +113,8 @@ def get_summary_chart(selected_portfolios, summary_df):
             "CAGR": {"width": 90},
             "Portfolio": {"width": 90},
             "Volatility": {"width": 90},
-            "Max Drawdown": {"width": 90}
-        }
+            "Max Drawdown": {"width": 90},
+        }  
     )  
 
 def get_values_chart(selected_portfolios, values):
@@ -177,15 +186,23 @@ def get_annual_returns_chart(monthly_returns, selected_portfolios):
     annual_returns_df.index.name = 'Portfolio'
     mask = annual_returns_df.index.isin(selected_portfolios)
     filtered_df = annual_returns_df[mask].sort_values(by=2021)
-    styled_table = filtered_df.style.background_gradient(
+    styled_table = filtered_df.style.apply(bold_outperformers, axis=None).background_gradient(
         cmap='RdBu', 
         vmin=-.3, 
         vmax=.3,
         axis=None 
-    ).format(
-        "{:.2%}"
-    )
+    ).format("{:.2%}")
     st.dataframe(styled_table, use_container_width=True)
+
+def bold_outperformers(data):
+    style_df = pd.DataFrame('', index=data.index, columns=data.columns)
+    benchmark_name = 'SPY Benchmark' 
+    if benchmark_name in data.index:
+        benchmark_row = data.loc[benchmark_name]
+        is_outperformer = data > benchmark_row
+        style_df = is_outperformer.applymap(lambda x: 'font-weight: bold;' if x else '')
+        style_df.loc[benchmark_name] = ''        
+    return style_df
 
 def get_drawdowns_chart(selected_portfolios, values):
     drawdowns = values[selected_portfolios] / values[selected_portfolios].cummax() - 1    
