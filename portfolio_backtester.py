@@ -33,6 +33,14 @@ def create_database_tables():
         PRIMARY KEY(date, portfolio_name, ticker, action)
     )
     """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS monthly_returns (
+        date TEXT,
+        portfolio_name TEXT,
+        monthly_return REAL,
+        PRIMARY KEY (date, portfolio_name)
+    )
+    """)
     cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Momentum','MTUM',1)")
     cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Momentum','AGG',0)")
     cursor.execute("INSERT OR REPLACE INTO portfolios VALUES ('Value','VTV',1)")
@@ -62,6 +70,7 @@ def get_portfolio_returns(initial_investment=10000):
     prices = get_portfolio_prices()
     cursor.execute("DELETE FROM portfolio_values")
     cursor.execute("DELETE FROM transactions")
+    cursor.execute("DELETE FROM monthly_returns")
     conn.commit()
     portfolios_df = pd.read_sql("SELECT * FROM portfolios", conn)
     portfolio_names = portfolios_df['portfolio_name'].unique()
@@ -104,7 +113,31 @@ def get_benchmark_returns(initial_investment=10000):
         """, (str(date), "SPY Benchmark", float(value)))
     conn.commit()
 
+def get_monthly_returns():
+    df = pd.read_sql("SELECT * FROM portfolio_values", conn)
+    df["date"] = pd.to_datetime(df["date"])
+    values = df.pivot(index="date", columns="portfolio_name", values="portfolio_value")
+    monthly_nav = values.resample("ME").last()
+    first_val = values.iloc[0:1] 
+    monthly_nav_with_start = pd.concat([first_val, monthly_nav])
+    monthly_returns = monthly_nav_with_start.pct_change().dropna()
+    monthly_returns = monthly_returns.reset_index()
+    monthly_long = monthly_returns.melt(
+        id_vars="date",
+        var_name="portfolio_name",
+        value_name="monthly_return"
+    )
+    monthly_long["date"] = monthly_long["date"].dt.strftime("%Y-%m-%d")
+    monthly_long.to_sql(
+        "monthly_returns",
+        conn,
+        if_exists="replace",
+        index=False
+    )
+    conn.commit()
+
 if __name__ == "__main__":
     create_database_tables()
     get_portfolio_returns()
     get_benchmark_returns()
+    get_monthly_returns()

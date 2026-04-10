@@ -7,6 +7,7 @@ from portfolio_backtester import (
     create_database_tables,
     get_portfolio_returns,
     get_benchmark_returns,
+    get_monthly_returns
 )
 
 chart_colors = {
@@ -15,7 +16,6 @@ chart_colors = {
     'Quality':"#23C3CB",
     'SPY Benchmark': "#15447E"
 }
-
 
 @st.cache_data
 def get_data():
@@ -27,10 +27,13 @@ def get_data():
     values['date'] = pd.to_datetime(values['date'])
     transactions = pd.read_sql("SELECT * FROM transactions", conn)
     transactions['date'] = pd.to_datetime(transactions['date'])
-    return values, transactions
+    get_monthly_returns()
+    monthly_returns = pd.read_sql("SELECT * FROM monthly_returns", conn)
+    monthly_returns["date"] = pd.to_datetime(monthly_returns["date"])
+    return values, transactions, monthly_returns
 
 def start_app():
-    values, transactions = get_data()
+    values, transactions, monthly_returns = get_data()
     values = values.pivot(index='date', columns='portfolio_name', values='portfolio_value')
     summary_df = get_calculations_summary(values)
     st.set_page_config(page_title="Portfolio Backtest Dashboard", layout="wide")
@@ -50,8 +53,8 @@ def start_app():
         st.subheader("Risk vs. Return")
         get_risk_returns_chart(selected_portfolios, summary_df)
     with tab3:
-        st.subheader("Annual Returns")
-        get_annual_returns_chart(selected_portfolios, values)
+        st.subheader("Annual Returns")    
+        get_annual_returns_chart(monthly_returns,selected_portfolios)
     with tab4:
         st.subheader("Drawdowns Over Time")    
         get_drawdowns_chart(selected_portfolios, values)
@@ -162,13 +165,13 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
     )
     st.plotly_chart(fig_rr, use_container_width=True)
 
-def get_annual_returns_chart(selected_portfolios, values):
-    annual_prices = values.resample('YE').last()
-    first_day = values.iloc[:1]
-    combined_data = pd.concat([first_day, annual_prices])
-    annual_returns = combined_data.pct_change().dropna()
-    annual_returns_df = pd.DataFrame(annual_returns).T
-    annual_returns_df.columns = pd.to_datetime(annual_returns_df.columns).year
+def get_annual_returns_chart(monthly_returns, selected_portfolios):
+    annual_returns = (
+        monthly_returns.groupby([monthly_returns["date"].dt.year, "portfolio_name"])["monthly_return"]
+        .apply(lambda x: (1 + x).prod() - 1)
+        .reset_index(name="annual_return")
+    )
+    annual_returns_df = annual_returns.pivot(index='portfolio_name', columns='date', values='annual_return')   
     annual_returns_df.index.name = 'Portfolio'
     mask = annual_returns_df.index.isin(selected_portfolios)
     filtered_df = annual_returns_df[mask].sort_values(by=2021)
