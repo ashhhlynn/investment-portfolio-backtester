@@ -12,9 +12,10 @@ from portfolio_backtester import (
 chart_colors = {
     'Momentum':"#10CF9B", 
     'Value':"#50A1E7", 
-    'Quality':"#27CCD4",
-    'SPY Benchmark': "#133E74"
+    'Quality':"#23C3CB",
+    'SPY Benchmark': "#15447E"
 }
+
 
 @st.cache_data
 def get_data():
@@ -172,9 +173,10 @@ def get_annual_returns_chart(selected_portfolios, values):
     mask = annual_returns_df.index.isin(selected_portfolios)
     filtered_df = annual_returns_df[mask].sort_values(by=2021)
     styled_table = filtered_df.style.background_gradient(
-        cmap='YlGnBu', 
-        vmin=-.1, 
-        vmax=.4 
+        cmap='RdBu', 
+        vmin=-.3, 
+        vmax=.3,
+        axis=None 
     ).format(
         "{:.2%}"
     )
@@ -185,7 +187,7 @@ def get_drawdowns_chart(selected_portfolios, values):
     fig_dd = go.Figure()
     for col in selected_portfolios:
         fig_dd.add_trace(
-            go.Scatter(
+            go.Scattergl(
                 x=drawdowns.index, 
                 y=drawdowns[col], 
                 mode='lines', 
@@ -195,7 +197,7 @@ def get_drawdowns_chart(selected_portfolios, values):
         )
     fig_dd.update_layout(
         xaxis_title="Date",
-        yaxis=dict(title='Drawdown (%)', tickformat=".2%", range=[None, 0]),
+        yaxis=dict(title='Drawdown (%)', tickformat=".2%"),
         legend_title="Portfolio",
         hovermode="x unified",
         template="plotly_white"
@@ -217,8 +219,8 @@ def get_rolling_charts(selected_portfolios, values):
                 line=dict(color=chart_colors[col])
             )
         )
-    fig_rm.add_hline(y=0, line_dash="dot", opacity=0.5)
-    fig_rm.add_hline(y=1, line_dash="dot", opacity=0.5)
+    fig_rm.add_hline(y=0, line_dash="dot", opacity=0.6)
+    fig_rm.add_hline(y=1, line_dash="dot", opacity=0.6)
     fig_rm.update_layout(
         yaxis=dict(title="Sharpe Ratio", tickformat=".2f"),
         xaxis_title="Date", 
