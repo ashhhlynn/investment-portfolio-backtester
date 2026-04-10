@@ -2,5 +2,4 @@
 primaryColor = "#6491c7"
 dataframeBorderColor = "#d7e0ea"
 borderColor= "#d7e0ea"
-secondaryBackgroundColor= "#eff3f7"
-dataframeHeaderBackgroundColor= "#eff3f7"
+dataframeHeaderBackgroundColor="#f0f2f6"

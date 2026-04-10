@@ -90,9 +90,7 @@ def get_calculations_summary(values):
 def get_summary_chart(selected_portfolios, summary_df):
     mask = summary_df['Portfolio'].isin(selected_portfolios)
     filtered_df = summary_df[mask]
-    styled_df = filtered_df.style.set_properties(
-        **{'background-color': "#fbfcfd"}
-    ).format(
+    styled_df = filtered_df.style.format(
         "{:.2%}", subset=['CAGR', 'Volatility', 'Max Drawdown']
     ).format(
         "{:.2f}", subset=['Sharpe']
@@ -108,7 +106,7 @@ def get_summary_chart(selected_portfolios, summary_df):
             "Volatility": {"width": 90},
             "Max Drawdown": {"width": 90}
         }
-    )   
+    )  
 
 def get_values_chart(selected_portfolios, values):
     fig_value = go.Figure()
@@ -127,9 +125,11 @@ def get_values_chart(selected_portfolios, values):
         xaxis_title="Date", 
         legend_title="Portfolio", 
         hovermode="x unified", 
-        template="plotly_white"
+        template="simple_white",
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)"
     )
-    st.plotly_chart(fig_value, use_container_width=True)
+    st.plotly_chart(fig_value, theme=None, use_container_width=True)
 
 def get_risk_returns_chart(selected_portfolios, summary_df):
     fig_rr = go.Figure()
@@ -161,9 +161,11 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
         xaxis_title = 'Volatility (%)',
         yaxis=dict(title='CAGR (%)', scaleanchor="x", scaleratio=1),
         showlegend=False,
-        template='plotly_white'
+        template='plotly_white',
+        plot_bgcolor="rgba(0,0,0,0)",  
+        paper_bgcolor="rgba(0,0,0,0)" 
     )
-    st.plotly_chart(fig_rr, use_container_width=True)
+    st.plotly_chart(fig_rr, use_container_width=True, theme=None)
 
 def get_annual_returns_chart(monthly_returns, selected_portfolios):
     annual_returns = (
@@ -203,9 +205,11 @@ def get_drawdowns_chart(selected_portfolios, values):
         yaxis=dict(title='Drawdown (%)', tickformat=".2%"),
         legend_title="Portfolio",
         hovermode="x unified",
-        template="plotly_white"
+        template="simple_white",
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)"
     )
-    st.plotly_chart(fig_dd, use_container_width=True)
+    st.plotly_chart(fig_dd, use_container_width=True, theme=None)
 
 def get_rolling_charts(selected_portfolios, values):
     window = 252
@@ -229,17 +233,18 @@ def get_rolling_charts(selected_portfolios, values):
         xaxis_title="Date", 
         legend_title="Portfolio",
         hovermode="x unified", 
-        template="plotly_white"
+        template="simple_white",
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)"
     ) 
-    st.plotly_chart(fig_rm, use_container_width=True)
+    st.plotly_chart(fig_rm, use_container_width=True, theme=None)
 
 def get_recent_transactions(transactions):
     recent = transactions.sort_values(["date"]).tail(20)
     recent.columns = recent.columns.str.replace('_', ' ').str.title()
     recent['Date'] = recent['Date'].dt.date
     recent['Action'] = recent['Action'].str.title()
-    recent_pd = recent.style.set_properties(**{'background-color': "#fbfcfd"})
     with st.expander("Recent Transactions"):
-        st.dataframe(recent_pd, hide_index=True)   
+        st.dataframe(recent, hide_index=True)   
 
 start_app()
