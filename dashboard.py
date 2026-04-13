@@ -101,7 +101,7 @@ def get_summary_chart(selected_portfolios, summary_df):
         use_container_width=False, 
         hide_index=True, 
         column_config = {
-            "Sharpe Ratio": {"width": 225},
+            "Sharpe Ratio": {"width": 215},
             "CAGR": {"width": 215},
             "Portfolio": {"width": 215},
             "Volatility": {"width": 215},
@@ -135,7 +135,8 @@ def get_values_chart(selected_portfolios, values):
             y=values[col], 
             mode='lines', 
             name=col,
-            line=dict(color=chart_colors[col])
+            line=dict(color=chart_colors[col]),
+            hovertemplate='%{y:,d}'
         ))
     fig_value.update_layout(
         yaxis_title="Portfolio Value ($)", 
@@ -240,6 +241,9 @@ def get_drawdowns_chart(selected_portfolios, values):
     drawdowns = values[selected_portfolios] / values[selected_portfolios].cummax() - 1    
     fig_dd = go.Figure()
     for col in selected_portfolios:
+        min_dd = drawdowns[col].min()
+        min_dt = drawdowns[col].idxmin()
+        min_dt_str = min_dt.strftime('%Y-%m-%d')
         fig_dd.add_trace(go.Scattergl(
             x=drawdowns.index, 
             y=drawdowns[col], 
@@ -247,6 +251,14 @@ def get_drawdowns_chart(selected_portfolios, values):
             name=col, 
             line=dict(color=chart_colors[col])
         ))
+        fig_dd.add_scatter(
+            x=[min_dt_str],
+            y=[min_dd],
+            mode="markers",
+            marker=dict(size=12, color=chart_colors[col], symbol='diamond'),
+            name=f"{min_dt_str}",
+            showlegend=False
+        )
     fig_dd.update_layout(
         xaxis_title="Date",
         yaxis=dict(title='Drawdown', tickformat=".2%"),
@@ -270,8 +282,6 @@ def get_rolling_charts(selected_portfolios, values):
             name=col, 
             line=dict(color=chart_colors[col])
         ))
-    fig_rm.add_hline(y=0, line_dash="dot", opacity=0.6)
-    fig_rm.add_hline(y=1, line_dash="dot", opacity=0.6)
     fig_rm.update_layout(
         yaxis=dict(title="Sharpe Ratio", tickformat=".2f"),
         xaxis_title="Date", 
@@ -280,6 +290,8 @@ def get_rolling_charts(selected_portfolios, values):
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)"
     ) 
+    fig_rm.add_hline(y=0, line_dash="dot")
+    fig_rm.add_hline(y=1, line_dash="dot", opacity=0.6)
     st.plotly_chart(fig_rm, use_container_width=True, theme=None) 
 
 start_app()
