@@ -11,9 +11,9 @@ from portfolio_backtester import (
 )
 
 chart_colors = {
-    'Momentum':"#10CF9B", 
+    'Momentum':"#0ED09C", 
     'Value':"#50A1E7", 
-    'Quality':"#23C3CB",
+    'Quality':"#17becf",
     'SPY Benchmark': "#15447E"
 }
 
@@ -49,6 +49,7 @@ def start_app():
         get_summary_chart(selected_portfolios, summary_df)
         st.subheader("Portfolio Value Over Time")
         get_values_chart(selected_portfolios, values)
+        get_recent_transactions(transactions)
     with tab2:
         st.subheader("Risk vs. Return")
         get_risk_returns_chart(selected_portfolios, summary_df)
@@ -61,7 +62,6 @@ def start_app():
     with tab5:
         st.subheader("Rolling Sharpe Ratio")
         get_rolling_charts(selected_portfolios, values)
-    get_recent_transactions(transactions)
 
 def get_calculations_summary(values):
     summary = []
@@ -84,22 +84,13 @@ def get_calculations_summary(values):
             "Sharpe": sharpe,
             "Max Drawdown": max_dd
         })
-    summary_df = pd.DataFrame(summary).sort_values(["Sharpe"])    
+    summary_df = pd.DataFrame(summary).sort_values(["Sharpe"], ascending=False)    
     return summary_df
-
-def highlight_winners(column):
-    if column.name in ['CAGR', 'Sharpe', 'Max Drawdown']:
-        is_winner = column == column.max()
-    elif column.name in ['Volatility']:
-        is_winner = column == column.min() 
-    else:
-        return [''] * len(column)
-    return ['background-color: white; color: #2475c3; font-weight: bold' if v else '' for v in is_winner]
 
 def get_summary_chart(selected_portfolios, summary_df):
     mask = summary_df['Portfolio'].isin(selected_portfolios)
     filtered_df = summary_df[mask]
-    styled_df = filtered_df.style.apply(highlight_winners).format(
+    styled_df = filtered_df.style.apply(highlight_winners).apply(highlight_losers).format(
         "{:.2%}", subset=['CAGR', 'Volatility', 'Max Drawdown']
     ).format(
         "{:.2f}", subset=['Sharpe']
@@ -116,6 +107,24 @@ def get_summary_chart(selected_portfolios, summary_df):
             "Max Drawdown": {"width": 90},
         }  
     )  
+
+def highlight_winners(column):
+    if column.name in ['CAGR', 'Sharpe', 'Max Drawdown']:
+        is_winner = column == column.max()
+    elif column.name in ['Volatility']:
+        is_winner = column == column.min() 
+    else:
+        return [''] * len(column)
+    return ['background-color: white; color: #2475c3; font-weight: bold' if v else '' for v in is_winner]
+
+def highlight_losers(column):
+    if column.name in ['CAGR', 'Sharpe', 'Max Drawdown']:
+        is_loser = column == column.min()
+    elif column.name in ['Volatility']:
+        is_loser = column == column.max() 
+    else:
+        return [''] * len(column)
+    return ['background-color: white; color:#ec5663; font-weight: normal' if v else '' for v in is_loser]
 
 def get_values_chart(selected_portfolios, values):
     fig_value = go.Figure()
@@ -149,30 +158,37 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
         cagr_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'CAGR'].values[0]
         vol_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Volatility'].values[0]
         sharpe_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Sharpe'].values[0]        
-        scaled_size = 20 + ((sharpe_value - min_s) / (max_s - min_s)) * 16
+        scaled_size = 20 + ((sharpe_value - min_s) / (max_s - min_s)) * 20
         fig_rr.add_trace(
             go.Scatter(
                 x=[vol_value], 
                 y=[cagr_value], 
-                mode='markers+text', 
+                mode='markers', 
                 name=col, 
-                textposition="bottom left", 
-                text=col,
                 marker=dict(color=chart_colors[col], size=(scaled_size)),
                 hovertemplate=
-                "CAGR: %{y:.2%}<br>" +
-                "Volatility: %{x:.2%}<br>" +
-                f"Sharpe: {sharpe_value:.2f}" +
+                "<b>CAGR:</b> %{y:.2}<br>" +
+                "<b>Volatility:</b> %{x:.2}<br>" +
+                f"<b>Sharpe:</b> {sharpe_value:.2f}" +
                 "<extra></extra>"
             )
         )
+    fig_rr.add_trace(go.Scatter(
+        x=[None], y=[None],
+        mode='markers',
+        marker=dict(size=20, color='gray'),
+        legendgroup='size',
+        name='Size: Sharpe'
+    ))
     fig_rr.update_layout(
         xaxis_title = 'Volatility (%)',
-        yaxis=dict(title='CAGR (%)', scaleanchor="x", scaleratio=1),
-        showlegend=False,
+        yaxis=dict(title='CAGR (%)',scaleanchor="x", scaleratio=1),
+        showlegend=True,
         template='plotly_white',
         plot_bgcolor="rgba(0,0,0,0)",  
-        paper_bgcolor="rgba(0,0,0,0)" 
+        paper_bgcolor="rgba(0,0,0,0)",
+        hoverlabel_align = 'right',
+        legend_title="Portfolio" 
     )
     st.plotly_chart(fig_rr, use_container_width=True, theme=None)
 
@@ -185,13 +201,31 @@ def get_annual_returns_chart(monthly_returns, selected_portfolios):
     annual_returns_df = annual_returns.pivot(index='portfolio_name', columns='date', values='annual_return')   
     annual_returns_df.index.name = 'Portfolio'
     mask = annual_returns_df.index.isin(selected_portfolios)
-    filtered_df = annual_returns_df[mask].sort_values(by=2021)
-    styled_table = filtered_df.style.apply(bold_outperformers, axis=None).background_gradient(
+    filtered_df = annual_returns_df[mask]
+    benchmark_name = 'SPY Benchmark'
+    if benchmark_name in filtered_df.index:
+        benchmark_values = filtered_df.loc[benchmark_name]
+        filtered_df['Beating'] = ((filtered_df > benchmark_values).sum(axis=1))
+    else:
+        filtered_df['Beating'] = 0
+    filtered_df = filtered_df.sort_values(['Beating'], ascending=False)
+    cols_to_style = [c for c in filtered_df.columns if c != 'Beating']
+    styled_table = filtered_df.style.apply(
+        bold_outperformers, 
+        axis=None
+    ).background_gradient(
         cmap='RdBu', 
         vmin=-.3, 
         vmax=.3,
-        axis=None 
-    ).format("{:.2%}")
+        axis=None,
+        subset=cols_to_style
+    ).set_properties(
+        **{'background-color': '#f7fbff', 'width':'50px'}, 
+        subset=['Beating']
+    ).format(
+        "{:.2%}", 
+        subset=cols_to_style
+    )
     st.dataframe(styled_table, use_container_width=True)
 
 def bold_outperformers(data):
