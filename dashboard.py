@@ -43,21 +43,25 @@ def start_app():
         ["Overview", "Risk vs. Return", "Annual Returns", "Drawdowns", "Rolling Sharpe"]
     )
     with tab1: 
-        st.subheader("Portfolio Performance Summary")
+        st.subheader("Performance Summary")
         get_summary_chart(selected_portfolios, summary_df)
-        st.subheader("Portfolio Value Over Time")
+        st.subheader("Portfolio Growth Over Time")
         get_values_chart(selected_portfolios, values)
     with tab2:
         st.subheader("Risk vs. Return")
+        st.caption("Bubble size reflects Sharpe ratio (risk-adjusted return).")
         get_risk_returns_chart(selected_portfolios, summary_df)
     with tab3:
         st.subheader("Annual Returns")    
+        st.caption("Color intensity highlights relative performance across years.")
         get_annual_returns_chart(monthly_returns,selected_portfolios)
     with tab4:
         st.subheader("Drawdowns Over Time")    
+        st.caption("Measures declines from prior peaks, highlighting periods of loss.")
         get_drawdowns_chart(selected_portfolios, values)
     with tab5:
         st.subheader("Rolling Sharpe Ratio")
+        st.caption("Shows how risk-adjusted performance changes over time.")
         get_rolling_charts(selected_portfolios, values)
 
 def get_calculations_summary(values):
@@ -174,9 +178,9 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
         x=[None], 
         y=[None],
         mode='markers',
-        marker=dict(size=20, color='gray'),
+        marker=dict(size=20, color='#D3D3D3'),
         legendgroup='size',
-        name='Size – Sharpe Ratio'
+        name='Sharpe (Size)'
     ))
     fig_rr.update_layout(
         xaxis=dict(title='Volatility', tickformat=".0%"),
@@ -201,11 +205,11 @@ def get_annual_returns_chart(monthly_returns, selected_portfolios):
     filtered_df = annual_returns_df[mask]
     if 'S&P 500 Benchmark' in filtered_df.index:
         benchmark_values = filtered_df.loc['S&P 500 Benchmark']
-        filtered_df['Beating'] = (filtered_df > benchmark_values).sum(axis=1)
+        filtered_df['Years Beat'] = (filtered_df > benchmark_values).sum(axis=1)
     else:
-        filtered_df['Beating'] = 0
-    filtered_df = filtered_df.sort_values(['Beating'], ascending=False)
-    cols_to_style = [c for c in filtered_df.columns if c != 'Beating']
+        filtered_df['Years Beat'] = 0
+    filtered_df = filtered_df.sort_values(['Years Beat'], ascending=False)
+    cols_to_style = [c for c in filtered_df.columns if c != 'Years Beat']
     styled_table = filtered_df.style.apply(
         bold_outperformers, 
         axis=None
@@ -217,7 +221,7 @@ def get_annual_returns_chart(monthly_returns, selected_portfolios):
         subset=cols_to_style
     ).set_properties(
         **{'background-color': '#f7fbff', 'width':'50px'}, 
-        subset=['Beating']
+        subset=['Years Beat']
     ).format(
         "{:.2%}", 
         subset=cols_to_style
@@ -225,7 +229,7 @@ def get_annual_returns_chart(monthly_returns, selected_portfolios):
     st.dataframe(
         styled_table, 
         use_container_width=True, 
-        column_config={"Beating": st.column_config.Column(width=40)}
+        column_config={"Years Beat": st.column_config.Column(width=40)}
     )
 
 def bold_outperformers(data):
@@ -290,7 +294,7 @@ def get_rolling_charts(selected_portfolios, values):
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)"
     ) 
-    fig_rm.add_hline(y=0, line_dash="dot")
+    fig_rm.add_hline(y=0.00, line_dash="dot")
     fig_rm.add_hline(y=1, line_dash="dot", opacity=0.6)
     st.plotly_chart(fig_rm, use_container_width=True, theme=None) 
 
