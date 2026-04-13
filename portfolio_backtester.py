@@ -105,12 +105,12 @@ def get_benchmark_returns(initial_investment=10000):
     cursor.execute("""
     INSERT OR REPLACE INTO portfolio_values
     VALUES (?,?,?)
-    """, (str(start_date), "SPY Benchmark", float(initial_investment)))
+    """, (str(start_date), "S&P 500 Benchmark", float(initial_investment)))
     for date, value in benchmark_value.items():
         cursor.execute("""
         INSERT OR REPLACE INTO portfolio_values
         VALUES (?,?,?)
-        """, (str(date), "SPY Benchmark", float(value)))
+        """, (str(date), "S&P 500 Benchmark", float(value)))
     conn.commit()
 
 def get_monthly_returns():

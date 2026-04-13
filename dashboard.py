@@ -18,28 +18,26 @@ def get_data():
     conn = sqlite3.connect("portfolio.db")
     values = pd.read_sql("SELECT * FROM portfolio_values", conn)
     values['date'] = pd.to_datetime(values['date'])
-    transactions = pd.read_sql("SELECT * FROM transactions", conn)
-    transactions['date'] = pd.to_datetime(transactions['date'])
     get_monthly_returns()
     monthly_returns = pd.read_sql("SELECT * FROM monthly_returns", conn)
     monthly_returns["date"] = pd.to_datetime(monthly_returns["date"])
-    return values, transactions, monthly_returns
+    return values, monthly_returns
 
 chart_colors = {
     'Momentum':"#0ED09C", 
     'Value':"#50A1E7", 
     'Quality':"#17becf",
-    'SPY Benchmark': "#15447E"
+    'S&P 500 Benchmark': "#15447E"
 }
 
 def start_app():
-    values, transactions, monthly_returns = get_data()
+    values, monthly_returns = get_data()
     values = values.pivot(index='date', columns='portfolio_name', values='portfolio_value')
     summary_df = get_calculations_summary(values)
     st.set_page_config(page_title="Portfolio Backtest Dashboard", layout="wide")
     st.title("Portfolio Backtester")
     portfolio_list = values.columns.tolist() 
-    portfolio_list.append(portfolio_list.pop(portfolio_list.index('SPY Benchmark')))
+    portfolio_list.append(portfolio_list.pop(portfolio_list.index('S&P 500 Benchmark')))
     selected_portfolios = st.multiselect("Select portfolios to analyze:", portfolio_list, default=portfolio_list)
     tab1, tab2, tab3, tab4, tab5 = st.tabs(
         ["Overview", "Risk vs. Return", "Annual Returns", "Drawdowns", "Rolling Sharpe"]
@@ -49,7 +47,6 @@ def start_app():
         get_summary_chart(selected_portfolios, summary_df)
         st.subheader("Portfolio Value Over Time")
         get_values_chart(selected_portfolios, values)
-        get_recent_transactions(transactions)
     with tab2:
         st.subheader("Risk vs. Return")
         get_risk_returns_chart(selected_portfolios, summary_df)
@@ -104,11 +101,11 @@ def get_summary_chart(selected_portfolios, summary_df):
         use_container_width=False, 
         hide_index=True, 
         column_config = {
-            "Sharpe Ratio": {"width": 220},
-            "CAGR": {"width": 220},
-            "Portfolio": {"width": 220},
-            "Volatility": {"width": 220},
-            "Max Drawdown": {"width": 220}
+            "Sharpe Ratio": {"width": 225},
+            "CAGR": {"width": 215},
+            "Portfolio": {"width": 215},
+            "Volatility": {"width": 215},
+            "Max Drawdown": {"width": 215}
         }  
     )  
 
@@ -133,15 +130,13 @@ def highlight_losers(column):
 def get_values_chart(selected_portfolios, values):
     fig_value = go.Figure()
     for col in selected_portfolios:
-        fig_value.add_trace(
-            go.Scattergl(
-                x=values.index, 
-                y=values[col], 
-                mode='lines', 
-                name=col,
-                line=dict(color=chart_colors[col])
-            )
-        )
+        fig_value.add_trace(go.Scattergl(
+            x=values.index, 
+            y=values[col], 
+            mode='lines', 
+            name=col,
+            line=dict(color=chart_colors[col])
+        ))
     fig_value.update_layout(
         yaxis_title="Portfolio Value ($)", 
         xaxis_title="Date", 
@@ -162,27 +157,25 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
         vol_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Volatility'].values[0]
         sharpe_value = summary_df_copy.loc[summary_df_copy['Portfolio'] == col, 'Sharpe Ratio'].values[0]        
         scaled_size = 20 + (sharpe_value - min_s) / (max_s - min_s) * 20
-        fig_rr.add_trace(
-            go.Scatter(
-                x=[vol_value], 
-                y=[cagr_value], 
-                mode='markers', 
-                name=col, 
-                marker=dict(color=chart_colors[col], size=(scaled_size)),
-                hovertemplate=
-                "<extra></extra>" +
-                "<b>CAGR:</b> %{y:.2}<br>" +
-                "<b>Volatility:</b> %{x:.2}<br>" +
-                f"<b>Sharpe:</b> {sharpe_value:.2f}" 
-            )
-        )
+        fig_rr.add_trace(go.Scatter(
+            x=[vol_value], 
+            y=[cagr_value], 
+            mode='markers', 
+            name=col, 
+            marker=dict(color=chart_colors[col], size=(scaled_size)),
+            hovertemplate=
+            "<extra></extra>" +
+            "<b>CAGR:</b> %{y:.2}<br>" +
+            "<b>Volatility:</b> %{x:.2}<br>" +
+            f"<b>Sharpe:</b> {sharpe_value:.2f}" 
+        ))
     fig_rr.add_trace(go.Scatter(
         x=[None], 
         y=[None],
         mode='markers',
         marker=dict(size=20, color='gray'),
         legendgroup='size',
-        name='Size: Sharpe'
+        name='Size – Sharpe Ratio'
     ))
     fig_rr.update_layout(
         xaxis=dict(title='Volatility', tickformat=".0%"),
@@ -196,19 +189,17 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
     st.plotly_chart(fig_rr, use_container_width=True, theme=None)
 
 def get_annual_returns_chart(monthly_returns, selected_portfolios):
-    annual_returns = (
-        monthly_returns.groupby([monthly_returns["date"].dt.year, "portfolio_name"])["monthly_return"].apply(
-            lambda x: (1 + x).prod() - 1
-        ).reset_index(
-            name="annual_return"
-        )
-    )
+    annual_returns = (monthly_returns.groupby([monthly_returns["date"].dt.year, "portfolio_name"])["monthly_return"].apply(
+        lambda x: (1 + x).prod() - 1
+    ).reset_index(
+        name="annual_return"
+    ))
     annual_returns_df = annual_returns.pivot(index='portfolio_name', columns='date', values='annual_return')   
     annual_returns_df.index.name = 'Portfolio'
     mask = annual_returns_df.index.isin(selected_portfolios)
     filtered_df = annual_returns_df[mask]
-    if 'SPY Benchmark' in filtered_df.index:
-        benchmark_values = filtered_df.loc['SPY Benchmark']
+    if 'S&P 500 Benchmark' in filtered_df.index:
+        benchmark_values = filtered_df.loc['S&P 500 Benchmark']
         filtered_df['Beating'] = (filtered_df > benchmark_values).sum(axis=1)
     else:
         filtered_df['Beating'] = 0
@@ -238,26 +229,24 @@ def get_annual_returns_chart(monthly_returns, selected_portfolios):
 
 def bold_outperformers(data):
     style_df = pd.DataFrame('', index=data.index, columns=data.columns)
-    if 'SPY Benchmark' in data.index:
-        benchmark_row = data.loc['SPY Benchmark']
+    if 'S&P 500 Benchmark' in data.index:
+        benchmark_row = data.loc['S&P 500 Benchmark']
         is_outperformer = data > benchmark_row
         style_df = is_outperformer.applymap(lambda x: 'font-weight: bold;' if x else '')
-        style_df.loc['SPY Benchmark'] = ''        
+        style_df.loc['S&P 500 Benchmark'] = ''        
     return style_df
 
 def get_drawdowns_chart(selected_portfolios, values):
     drawdowns = values[selected_portfolios] / values[selected_portfolios].cummax() - 1    
     fig_dd = go.Figure()
     for col in selected_portfolios:
-        fig_dd.add_trace(
-            go.Scattergl(
-                x=drawdowns.index, 
-                y=drawdowns[col], 
-                mode='lines', 
-                name=col, 
-                line=dict(color=chart_colors[col])
-            )
-        )
+        fig_dd.add_trace(go.Scattergl(
+            x=drawdowns.index, 
+            y=drawdowns[col], 
+            mode='lines', 
+            name=col, 
+            line=dict(color=chart_colors[col])
+        ))
     fig_dd.update_layout(
         xaxis_title="Date",
         yaxis=dict(title='Drawdown', tickformat=".2%"),
@@ -274,15 +263,13 @@ def get_rolling_charts(selected_portfolios, values):
     for col in selected_portfolios:
         daily_returns = values[col].pct_change().dropna()
         rolling_sharpe = (daily_returns.rolling(window).mean() / daily_returns.rolling(window).std()) * np.sqrt(252)
-        fig_rm.add_trace(
-            go.Scattergl(
-                x=rolling_sharpe.index, 
-                y=rolling_sharpe, 
-                mode='lines', 
-                name=col, 
-                line=dict(color=chart_colors[col])
-            )
-        )
+        fig_rm.add_trace(go.Scattergl(
+            x=rolling_sharpe.index, 
+            y=rolling_sharpe, 
+            mode='lines', 
+            name=col, 
+            line=dict(color=chart_colors[col])
+        ))
     fig_rm.add_hline(y=0, line_dash="dot", opacity=0.6)
     fig_rm.add_hline(y=1, line_dash="dot", opacity=0.6)
     fig_rm.update_layout(
@@ -293,14 +280,6 @@ def get_rolling_charts(selected_portfolios, values):
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)"
     ) 
-    st.plotly_chart(fig_rm, use_container_width=True, theme=None)
-
-def get_recent_transactions(transactions):
-    recent = transactions.sort_values(["date"]).tail(20)
-    recent.columns = recent.columns.str.replace('_', ' ').str.title()
-    recent['Date'] = recent['Date'].dt.date
-    recent['Action'] = recent['Action'].str.title()
-    with st.expander("Recent Transactions"):
-        st.dataframe(recent, hide_index=True)   
+    st.plotly_chart(fig_rm, use_container_width=True, theme=None) 
 
 start_app()
