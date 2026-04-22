@@ -59,6 +59,7 @@ def start_app():
         st.subheader("Drawdowns Over Time")    
         st.caption("Measures declines from prior peaks, highlighting periods of loss.")
         get_drawdowns_chart(selected_portfolios, values)
+        get_calculations_drawdowns(values)
     with tab5:
         st.subheader("Rolling Sharpe Ratio")
         st.caption("Shows how risk-adjusted performance changes over time.")
@@ -129,7 +130,7 @@ def highlight_losers(column):
         is_loser = column == column.max() 
     else:
         return [''] * len(column)
-    return ['background-color: white; color:#707b90' if v else '' for v in is_loser]
+    return ['background-color: white; color:#707b90; font-weight:normal' if v else '' for v in is_loser]
 
 def get_values_chart(selected_portfolios, values):
     fig_value = go.Figure()
@@ -180,7 +181,7 @@ def get_risk_returns_chart(selected_portfolios, summary_df):
         mode='markers',
         marker=dict(size=20, color='#D3D3D3'),
         legendgroup='size',
-        name='Sharpe (Size)'
+        name='Sharpe Size'
     ))
     fig_rr.update_layout(
         xaxis=dict(title='Volatility', tickformat=".0%"),
@@ -272,6 +273,46 @@ def get_drawdowns_chart(selected_portfolios, values):
         paper_bgcolor="rgba(0,0,0,0)"
     )
     st.plotly_chart(fig_dd, use_container_width=True, theme=None)
+
+def get_calculations_drawdowns(values):
+    durations = []
+    for portfolio_name in values.columns:
+        series = values[portfolio_name].dropna()
+        drawdown = series / series.cummax() - 1
+        duration = 0
+        max_duration = 0
+        current_start = None
+        longest_start = None
+        longest_end = None 
+        for date, val in drawdown.items():
+            if val < 0:
+                if duration == 0:
+                    current_start = date
+                duration += 1
+                if duration > max_duration:
+                    max_duration = duration 
+                    longest_start = current_start
+                    longest_end = date
+            else:
+                duration = 0
+        durations.append({
+            'Portfolio': portfolio_name,
+            'Start Date': longest_start.strftime('%b %d, %Y'),
+            'End Date': longest_end.strftime('%b %d, %Y'),
+            'Longest Drawdown Duration': f"{(longest_end - longest_start).days} days"
+        })
+    drawdowns_durations = pd.DataFrame(durations)
+    st.dataframe(
+        drawdowns_durations, 
+        use_container_width=False, 
+        hide_index=True, 
+        column_config = {
+            "Portfolio": {"width": 250},
+            "Start Date": {"width": 250},
+            "End Date": {"width": 250},
+            "Longest Drawdown Duration": {"width": 250}
+        }  
+    )  
 
 def get_rolling_charts(selected_portfolios, values):
     window = 252
