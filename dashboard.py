@@ -59,7 +59,7 @@ def start_app():
         st.subheader("Drawdowns Over Time")    
         st.caption("Measures declines from prior peaks, highlighting periods of loss.")
         get_drawdowns_chart(selected_portfolios, values)
-        get_calculations_drawdowns(values)
+        get_drawdowns_summary_chart(values)
     with tab5:
         st.subheader("Rolling Sharpe Ratio")
         st.caption("Shows how risk-adjusted performance changes over time.")
@@ -274,7 +274,7 @@ def get_drawdowns_chart(selected_portfolios, values):
     )
     st.plotly_chart(fig_dd, use_container_width=True, theme=None)
 
-def get_calculations_drawdowns(values):
+def get_drawdowns_summary_chart(values):
     durations = []
     for portfolio_name in values.columns:
         series = values[portfolio_name].dropna()
@@ -301,16 +301,16 @@ def get_calculations_drawdowns(values):
             'End Date': longest_end.strftime('%b %d, %Y'),
             'Longest Drawdown Duration': f"{(longest_end - longest_start).days} days"
         })
-    drawdowns_durations = pd.DataFrame(durations)
+    drawdowns_durations = pd.DataFrame(durations).sort_values(["Longest Drawdown Duration"], ascending=True)  
     st.dataframe(
         drawdowns_durations, 
         use_container_width=False, 
         hide_index=True, 
         column_config = {
-            "Portfolio": {"width": 250},
-            "Start Date": {"width": 250},
-            "End Date": {"width": 250},
-            "Longest Drawdown Duration": {"width": 250}
+            "Portfolio": {"width": 265},
+            "Start Date": {"width": 265},
+            "End Date": {"width": 265},
+            "Longest Drawdown Duration": {"width": 265}
         }  
     )  
 
